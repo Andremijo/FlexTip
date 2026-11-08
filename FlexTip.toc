@@ -1,0 +1,12 @@
+## Interface: 16001, 120105
+## Title: FlexTip
+## Notes: Move, resize and collapse the game tooltip, plus a few handy tooltip tweaks.
+## Version: 1.1.0
+## SavedVariables: FlexTipDB
+## IconTexture: Interface\Icons\INV_Misc_Note_01
+## AddonCompartmentFunc: FlexTip_OnAddonCompartmentClick
+
+Core.lua
+Tooltip.lua
+Mover.lua
+Options.lua

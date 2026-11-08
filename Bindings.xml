@@ -1,0 +1,11 @@
+<Bindings>
+	<Binding name="FLEXTIP_TOGGLECOLLAPSE" header="FLEXTIP" category="ADDONS">
+		FlexTip_ToggleCollapse()
+	</Binding>
+	<Binding name="FLEXTIP_TOGGLELOCK" category="ADDONS">
+		FlexTip_ToggleLock()
+	</Binding>
+	<Binding name="FLEXTIP_OPTIONS" category="ADDONS">
+		FlexTip_ToggleOptions()
+	</Binding>
+</Bindings>
