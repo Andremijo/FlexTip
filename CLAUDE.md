@@ -17,7 +17,7 @@ The current version is in `FlexTip.toc` (`## Version`). The user-facing docs are
   - Hidden rows might flash for one frame when a tooltip first appears. Row packing runs in OnUpdate.
   - `FitToRows` trims the height after rows are blanked.
   - Questie's lines are spotted from the caller path in `debugstack`. That path format is unconfirmed.
-- No license has been chosen yet. Don't add one without asking the owner.
+- License: MIT (`LICENSE`, copyright "Andremijo"). `LICENSE` ships in the install zip, as MIT requires; don't mark it export-ignore.
 
 ## Target client
 

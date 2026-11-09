@@ -100,3 +100,7 @@ tests/run.sh
 ```
 
 The `tests/` folder is never loaded by the game, so it's fine to leave it in your AddOns folder.
+
+## License
+
+FlexTip is released under the [MIT License](LICENSE).
