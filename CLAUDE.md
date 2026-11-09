@@ -153,13 +153,16 @@ tests/run.sh                          # luacheck + every tests/test_*.lua
   `.gitattributes` marks the dev files `export-ignore`, so the zip holds only the addon, README and LICENSE.
 - Releasing a new version:
   1. Bump `## Version` in `FlexTip.toc` and the fallback version string in `Core.lua`.
-  2. Push, and write release notes for the owner.
-  3. The owner publishes the release in GitHub's web UI, with a new tag `vX.Y.Z` on `main` and the notes. A Claude session can't push tags or create releases (GitHub refuses both for this session type).
-  4. The `Release zip` workflow then runs on its own:
+  2. Write the release notes to `.github/release-notes/vX.Y.Z.md`.
+  3. Push to `main`.
+  4. The owner starts the release with either of these. A Claude session can't push tags, create releases, or start the workflow to do it for them; that's GitHub refusing it for this session type, so don't try to get around it.
+     - **Actions > Release zip > Run workflow**, with tag `vX.Y.Z`. The `Release zip` workflow creates the tag and the release from `main`, with the notes file and the zip.
+     - Or publish a release in GitHub's release form. The workflow then attaches the zip.
+  5. What the workflow (`.github/workflows/release-zip.yml`) does:
      - It checks that `FlexTip.toc` has the tag's version, and fails if not.
      - It runs `tests/run.sh`.
-     - It builds `FlexTip-Forever.zip` and attaches it to the release, replacing an older copy.
-  5. For a release that already exists, the owner can start the workflow from Actions > Release zip > Run workflow, with the tag.
+     - It builds `FlexTip-Forever.zip` and creates the release, or replaces the zip on an existing one.
+     - It never runs on a plain push.
   - The README's install steps link to the latest release.
 - `docs/rows.png` must match real behavior: `tests/test_parts.lua` checks the exact tooltips it shows. Change both together.
 - The session's GitHub access can push branches only. Repository settings (description, topics), tags and releases are refused; the owner does those on GitHub.

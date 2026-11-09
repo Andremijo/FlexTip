@@ -1,8 +1,14 @@
-# Builds FlexTip-Forever.zip and attaches it to a GitHub release.
+# Builds FlexTip-Forever.zip and puts it on a GitHub release.
 #
-# Runs on its own when you publish a release. For a release that already
-# exists, run it by hand: Actions > Release zip > Run workflow, and enter the
-# release's tag (like v1.3.0). Running it again replaces the zip.
+# Two ways to use it:
+# - Publish a release on GitHub; this runs on its own and attaches the zip.
+# - Actions > Release zip > Run workflow, with a tag like v1.3.0. If there is no
+#   release with that tag yet, it creates the tag and the release from main, with
+#   the notes in .github/release-notes/<tag>.md. If the release exists, it
+#   rebuilds the zip from the tag and replaces the old one.
+#
+# It never runs on a plain push, so only someone with access to the Actions tab
+# or the release form can publish a release.
 name: Release zip
 
 on:
@@ -11,7 +17,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "Tag of the release to build the zip for, like v1.3.0"
+        description: "Release tag, like v1.3.0"
         required: true
 
 permissions:
@@ -22,10 +28,22 @@ jobs:
     runs-on: ubuntu-latest
     env:
       TAG: ${{ github.event.release.tag_name || inputs.tag }}
+      GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ env.TAG }}
+          ref: ${{ github.event.release.tag_name || github.ref }}
+
+      - name: Use the tag's code if the tag already exists
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          if git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null; then
+            git fetch --depth=1 origin "refs/tags/$TAG:refs/tags/$TAG"
+            git checkout --quiet "$TAG"
+            echo "Building the existing tag $TAG."
+          else
+            echo "Tag $TAG doesn't exist yet; building $(git rev-parse --short HEAD) from $GITHUB_REF_NAME."
+          fi
 
       - name: Check that FlexTip.toc has the release's version
         run: |
@@ -42,11 +60,19 @@ jobs:
           tests/run.sh
 
       # The folder inside must be named FlexTip for WoW to load the addon.
-      # .gitattributes keeps tests and docs out of the zip.
+      # .gitattributes keeps tests, docs and .github out of the zip.
       - name: Build FlexTip-Forever.zip
         run: git archive --format=zip --prefix=FlexTip/ -o FlexTip-Forever.zip HEAD
 
-      - name: Attach the zip to the release
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: gh release upload "$TAG" FlexTip-Forever.zip --clobber --repo "$GITHUB_REPOSITORY"
+      - name: Put the zip on the release
+        run: |
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload "$TAG" FlexTip-Forever.zip --clobber --repo "$GITHUB_REPOSITORY"
+            echo "Attached FlexTip-Forever.zip to the existing release $TAG."
+          else
+            notes=".github/release-notes/$TAG.md"
+            if [ -f "$notes" ]; then set -- --notes-file "$notes"; else set -- --generate-notes; fi
+            gh release create "$TAG" FlexTip-Forever.zip --repo "$GITHUB_REPOSITORY" \
+              --target "$(git rev-parse HEAD)" --title "FlexTip ${TAG#v}" "$@"
+            echo "Created release $TAG with FlexTip-Forever.zip."
+          fi
