@@ -1,0 +1,52 @@
+# Builds FlexTip-Forever.zip and attaches it to a GitHub release.
+#
+# Runs on its own when you publish a release. For a release that already
+# exists, run it by hand: Actions > Release zip > Run workflow, and enter the
+# release's tag (like v1.3.0). Running it again replaces the zip.
+name: Release zip
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag of the release to build the zip for, like v1.3.0"
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  zip:
+    runs-on: ubuntu-latest
+    env:
+      TAG: ${{ github.event.release.tag_name || inputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TAG }}
+
+      - name: Check that FlexTip.toc has the release's version
+        run: |
+          version=$(sed -n 's/^## Version: *//p' FlexTip.toc | tr -d '\r')
+          if [ "v$version" != "$TAG" ]; then
+            echo "::error::FlexTip.toc says version $version, but the release tag is $TAG. Bump the version in FlexTip.toc and Core.lua, or fix the tag."
+            exit 1
+          fi
+
+      - name: Run the tests
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq lua5.1 lua-check
+          tests/run.sh
+
+      # The folder inside must be named FlexTip for WoW to load the addon.
+      # .gitattributes keeps tests and docs out of the zip.
+      - name: Build FlexTip-Forever.zip
+        run: git archive --format=zip --prefix=FlexTip/ -o FlexTip-Forever.zip HEAD
+
+      - name: Attach the zip to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "$TAG" FlexTip-Forever.zip --clobber --repo "$GITHUB_REPOSITORY"

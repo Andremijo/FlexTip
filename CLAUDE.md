@@ -49,6 +49,7 @@ The current version is in `FlexTip.toc` (`## Version`). The user-facing docs are
 | `Options.lua` | The options window (`/ftip`), 3 columns (the third is "What tooltips show"), and a small entry under Options > AddOns |
 | `Bindings.xml` | Key bindings: toggle collapse, lock or unlock, open options |
 | `tests/` | WoW API mock, Questie mock, tests, `run.sh` |
+| `.github/workflows/release-zip.yml` | Builds `FlexTip-Forever.zip` and attaches it to each published release (see Releasing) |
 | `docs/` | `rows.png`, the README illustration, plus its source `illustration.html` and `render.js`. Regenerate with `node docs/render.js` (needs Playwright). It's labeled as an illustration because nobody could take in-game screenshots here. Swap in real screenshots if the owner provides some, using made-up or the owner's own character names only. |
 
 ## How it works
@@ -152,8 +153,14 @@ tests/run.sh                          # luacheck + every tests/test_*.lua
   `.gitattributes` marks the dev files `export-ignore`, so the zip holds only the addon, README and LICENSE.
 - Releasing a new version:
   1. Bump `## Version` in `FlexTip.toc` and the fallback version string in `Core.lua`.
-  2. Push.
-  3. Build `FlexTip-Forever.zip` and write release notes, and hand both to the owner. A Claude session can't push tags or create releases (GitHub refuses both for this session type). The owner publishes the release in the web UI: new tag `vX.Y.Z` on `main`, notes, zip attached. The README's install steps link to the latest release.
+  2. Push, and write release notes for the owner.
+  3. The owner publishes the release in GitHub's web UI, with a new tag `vX.Y.Z` on `main` and the notes. A Claude session can't push tags or create releases (GitHub refuses both for this session type).
+  4. The `Release zip` workflow then runs on its own:
+     - It checks that `FlexTip.toc` has the tag's version, and fails if not.
+     - It runs `tests/run.sh`.
+     - It builds `FlexTip-Forever.zip` and attaches it to the release, replacing an older copy.
+  5. For a release that already exists, the owner can start the workflow from Actions > Release zip > Run workflow, with the tag.
+  - The README's install steps link to the latest release.
 - `docs/rows.png` must match real behavior: `tests/test_parts.lua` checks the exact tooltips it shows. Change both together.
 - The session's GitHub access can push branches only. Repository settings (description, topics), tags and releases are refused; the owner does those on GitHub.
 - This is a public repo:
