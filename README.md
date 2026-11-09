@@ -5,10 +5,11 @@ FlexTip is a World of Warcraft addon for WoW Forever that changes the game toolt
 ## Install
 
 1. Close the game.
-2. Copy the `FlexTip` folder into your WoW Forever AddOns folder, usually:
+2. Get the addon: download it from [GitHub](https://github.com/Andremijo/FlexTip) (**Code > Download ZIP**) and unzip it. Rename the `FlexTip-main` folder to `FlexTip`.
+3. Copy the `FlexTip` folder into your WoW Forever AddOns folder, usually:
    `World of Warcraft\_forever_\Interface\AddOns\FlexTip`
    During the beta some installs used another folder name, such as `_classic_beta_`. Use whichever `_something_` folder your Forever client runs from.
-3. Start the game. On the character screen, open **AddOns** and make sure FlexTip is ticked.
+4. Start the game. On the character screen, open **AddOns** and make sure FlexTip is ticked.
 
 If FlexTip shows as **Out of date**, the client's interface number is different from the one in `FlexTip.toc` (`16001`). To find yours, type this in chat:
 
