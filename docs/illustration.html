@@ -1,6 +1,6 @@
 <!doctype html>
-<!-- Illustration of FlexTip's row options for the README. Not an in-game screenshot.
-     Render with: node docs/render.js -->
+<!-- Illustration of FlexTip's "What tooltips show" options for the README.
+     Not an in-game screenshot. Render with: node docs/render.js -->
 <html>
 <head>
 <meta charset="utf-8">
@@ -12,79 +12,161 @@
     background: #16191f;
     border-radius: 14px;
     font-family: "DejaVu Sans", "Segoe UI", Arial, sans-serif;
+    color: #e6e6e6;
   }
-  .row { display: flex; gap: 36px; align-items: flex-start; }
-  .panel { width: 300px; }
-  .caption { color: #e6e6e6; font-size: 15px; font-weight: 600; margin-bottom: 4px; }
-  .sub { color: #9aa0a8; font-size: 12.5px; margin-bottom: 12px; min-height: 32px; line-height: 16px; }
+  .layout { display: flex; gap: 40px; align-items: flex-start; }
+
+  /* Settings checklist */
+  .settings { width: 270px; background: #1f242c; border: 1px solid #2e3540; border-radius: 10px; padding: 16px 18px 12px; }
+  .settings h2 { font-size: 15px; margin: 0 0 2px; color: #ffd100; font-weight: 600; }
+  .settings .note { font-size: 11.5px; color: #9aa0a8; margin-bottom: 8px; }
+  .group { font-size: 11.5px; color: #c9a227; margin: 9px 0 3px; text-transform: uppercase; letter-spacing: 0.04em; }
+  .checks { display: grid; grid-template-columns: 1fr 1fr; row-gap: 3px; column-gap: 6px; }
+  .checks.single { grid-template-columns: 1fr; }
+  .check { font-size: 13px; display: flex; align-items: center; gap: 7px; color: #e6e6e6; }
+  .check.off { color: #8a9099; }
+  .box { width: 13px; height: 13px; border: 1.5px solid #8a9099; border-radius: 3px; flex: none; position: relative; }
+  .on .box { border-color: #3fbf5f; background: #2b8a43; }
+  .on .box::after { content: ""; position: absolute; left: 3.5px; top: 0.5px; width: 3.5px; height: 7.5px;
+    border: solid #fff; border-width: 0 2px 2px 0; transform: rotate(45deg); }
+
+  /* Before / after tooltips */
+  .examples { display: flex; flex-direction: column; gap: 26px; }
+  .example .caption { font-size: 15px; font-weight: 600; margin-bottom: 10px; }
+  .pair { display: flex; align-items: flex-start; gap: 22px; }
+  .label { font-size: 11.5px; color: #9aa0a8; margin-bottom: 5px; }
+  .arrow { font-size: 26px; color: #6d7480; padding-top: 70px; }
+  .tipwrap { display: inline-block; }
   .tip {
-    display: inline-block;
+    display: block;
     background: rgba(10, 10, 26, 0.95);
     border: 2px solid #b9b9b9;
     border-radius: 5px;
-    padding: 9px 12px 10px;
+    padding: 8px 12px 9px;
     font-family: "DejaVu Serif", Georgia, serif;
-    font-size: 14.5px;
-    line-height: 19px;
+    font-size: 14px;
+    line-height: 18.5px;
     box-shadow: 0 0 0 1px #000 inset;
-    min-width: 170px;
+    min-width: 150px;
   }
-  .tipwrap { display: inline-block; }
-  .tip { display: block; }
   .bar { height: 7px; background: #1fd11f; border: 1px solid #000; margin-top: 2px; }
-  .name { font-size: 16.5px; line-height: 22px; }
+  .name { font-size: 16px; line-height: 21px; }
   .paladin { color: #f48cba; }
   .guild { color: #a8a8ff; }
   .white { color: #ffffff; }
   .hostile { color: #ff3a2a; }
   .quest { color: #ffd100; }
   .objective { color: #eeeeee; padding-left: 14px; }
-  .icon { display: inline-block; width: 12px; height: 12px; background: #ffd100; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
-  .foot { color: #7d838c; font-size: 11.5px; margin-top: 18px; }
+  .icon { display: inline-block; width: 11px; height: 11px; background: #ffd100; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
+  .foot { color: #7d838c; font-size: 11.5px; margin-top: 20px; }
 </style>
 </head>
 <body>
 <div id="card">
-  <div class="row">
-    <div class="panel">
-      <div class="caption">Blizzard default</div>
-      <div class="sub">Every row shows.</div>
-      <div class="tipwrap">
-        <div class="tip">
-          <div class="name paladin">Aldric Dawnmantle</div>
-          <div class="guild">Silver Lanterns - Initiate</div>
-          <div class="white">Level 22 Human</div>
-          <div class="paladin">Paladin</div>
-          <div class="white">Alliance</div>
-        </div>
-        <div class="bar"></div>
+  <div class="layout">
+    <div class="settings">
+      <h2>What tooltips show</h2>
+      <div class="note">The settings used for the examples</div>
+      <div class="group">Name</div>
+      <div class="checks">
+        <div class="check off"><span class="box"></span>Realm</div>
+        <div class="check off"><span class="box"></span>Title</div>
+      </div>
+      <div class="group">Guild</div>
+      <div class="checks">
+        <div class="check on"><span class="box"></span>Guild</div>
+        <div class="check off"><span class="box"></span>Rank</div>
+      </div>
+      <div class="group">Level row</div>
+      <div class="checks">
+        <div class="check on"><span class="box"></span>Level</div>
+        <div class="check off"><span class="box"></span>Race / type</div>
+      </div>
+      <div class="group">More rows</div>
+      <div class="checks">
+        <div class="check off"><span class="box"></span>Class</div>
+        <div class="check off"><span class="box"></span>Faction</div>
+        <div class="check on"><span class="box"></span>PvP</div>
+        <div class="check on"><span class="box"></span>NPC title</div>
+      </div>
+      <div class="group">Quests</div>
+      <div class="checks single">
+        <div class="check off"><span class="box"></span>Quests to pick up or turn in</div>
+        <div class="check on"><span class="box"></span>Quest objectives and progress</div>
+      </div>
+      <div class="group">Other</div>
+      <div class="checks single">
+        <div class="check on"><span class="box"></span>Rows from other addons</div>
+        <div class="check off"><span class="box"></span>Add a 'Target:' row</div>
       </div>
     </div>
-    <div class="panel">
-      <div class="caption">Rows hidden</div>
-      <div class="sub">Guild, class and faction unticked.<br>The rows that stay move up.</div>
-      <div class="tipwrap">
-        <div class="tip">
-          <div class="name paladin">Aldric Dawnmantle</div>
-          <div class="white">Level 22 Human</div>
+
+    <div class="examples">
+      <div class="example">
+        <div class="caption">A player</div>
+        <div class="pair">
+          <div>
+            <div class="label">Blizzard default</div>
+            <div class="tipwrap">
+              <div class="tip">
+                <div class="name paladin">Sergeant Aldric-Argent Dawn</div>
+                <div class="guild">Silver Lanterns - Initiate</div>
+                <div class="white">Level 22 Human</div>
+                <div class="paladin">Paladin</div>
+                <div class="white">Alliance</div>
+              </div>
+              <div class="bar"></div>
+            </div>
+          </div>
+          <div class="arrow">&#8594;</div>
+          <div>
+            <div class="label">With FlexTip</div>
+            <div class="tipwrap">
+              <div class="tip">
+                <div class="name paladin">Aldric</div>
+                <div class="guild">Silver Lanterns</div>
+                <div class="white">Level 22</div>
+              </div>
+              <div class="bar"></div>
+            </div>
+          </div>
         </div>
-        <div class="bar"></div>
       </div>
-    </div>
-    <div class="panel">
-      <div class="caption">Collapsed, with Questie</div>
-      <div class="sub">Collapsed to 1 row. Quest progress<br>stays visible.</div>
-      <div class="tipwrap">
-        <div class="tip">
-          <div class="name hostile">Kobold Vermin</div>
-          <div class="quest"><span class="icon"></span>[5] Kobold Camp Cleanup</div>
-          <div class="objective">Kobold Vermin slain: 3/10</div>
+
+      <div class="example">
+        <div class="caption">An NPC, with Questie</div>
+        <div class="pair">
+          <div>
+            <div class="label">Blizzard default + Questie</div>
+            <div class="tipwrap">
+              <div class="tip">
+                <div class="name hostile">Riverpaw Gnoll</div>
+                <div class="white">Level 8 Humanoid</div>
+                <div class="quest"><span class="icon"></span>[6] Gnoll Bounty</div>
+                <div class="quest">[5] Riverpaw Gnolls</div>
+                <div class="objective">Riverpaw Gnoll slain: 2/8</div>
+              </div>
+              <div class="bar"></div>
+            </div>
+          </div>
+          <div class="arrow">&#8594;</div>
+          <div>
+            <div class="label">With FlexTip</div>
+            <div class="tipwrap">
+              <div class="tip">
+                <div class="name hostile">Riverpaw Gnoll</div>
+                <div class="white">Level 8</div>
+                <div class="quest">[5] Riverpaw Gnolls</div>
+                <div class="objective">Riverpaw Gnoll slain: 2/8</div>
+              </div>
+              <div class="bar"></div>
+            </div>
+          </div>
         </div>
-        <div class="bar"></div>
       </div>
     </div>
   </div>
-  <div class="foot">Illustration of FlexTip's row options, not an in-game screenshot. Names are made up.</div>
+  <div class="foot">Illustration of FlexTip's options, not an in-game screenshot. Names are made up. Hold Shift in game to see the full tooltip.</div>
 </div>
 </body>
 </html>

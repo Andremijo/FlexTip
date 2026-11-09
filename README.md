@@ -2,14 +2,14 @@
 
 FlexTip is a World of Warcraft addon for WoW Forever that changes the game tooltip. It can move the tooltip, resize it and collapse it, and it adds a few other tweaks. It is written for the Mainline (Midnight-era) API that WoW Forever uses, so it also runs on retail.
 
-![Three tooltips side by side: Blizzard's default with every row, the same tooltip with guild, class and faction hidden, and a collapsed NPC tooltip that still shows Questie's quest progress](docs/rows.png)
+![FlexTip's "What tooltips show" checkboxes next to two before-and-after examples. A player tooltip "Sergeant Aldric-Argent Dawn, Silver Lanterns - Initiate, Level 22 Human, Paladin, Alliance" becomes "Aldric, Silver Lanterns, Level 22". An NPC tooltip with Questie, "Riverpaw Gnoll, Level 8 Humanoid, Gnoll Bounty, Riverpaw Gnolls, Riverpaw Gnoll slain: 2/8", loses the creature type and the quest to pick up.](docs/rows.png)
 
-*Illustration of the row options, not an in-game screenshot.*
+*Illustration of the options, not an in-game screenshot.*
 
 ## Install
 
 1. Close the game.
-2. Get the addon: download it from [GitHub](https://github.com/Andremijo/FlexTip) (**Code > Download ZIP**) and unzip it. Rename the `FlexTip-main` folder to `FlexTip`.
+2. Download **FlexTip-Forever.zip** from the [latest release](https://github.com/Andremijo/FlexTip/releases/latest) and unzip it. It holds a folder named `FlexTip`.
 3. Copy the `FlexTip` folder into your WoW Forever AddOns folder, usually:
    `World of Warcraft\_forever_\Interface\AddOns\FlexTip`
    During the beta some installs used another folder name, such as `_classic_beta_`. Use whichever `_something_` folder your Forever client runs from.

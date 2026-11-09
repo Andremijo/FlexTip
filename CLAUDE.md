@@ -145,12 +145,16 @@ tests/run.sh                          # luacheck + every tests/test_*.lua
   - Unit tooltips are built from `M.units` through tooltip data, line pre-calls and post-calls, like the game does.
 - `tests/questie_mock.lua` copies Questie's Forever tooltip behavior listed above.
 - When fixing or adding behavior, add a test. Then break the code on purpose to check that the test catches it.
-- Install zip:
+- Install zip: always named **`FlexTip-Forever.zip`** (the owner's choice), with a `FlexTip/` folder inside, because WoW needs that folder name. Build it from the release commit, outside the repo folder so it never gets committed:
   ```bash
-  git archive --format=zip --prefix=FlexTip/ -o FlexTip.zip HEAD
+  git archive --format=zip --prefix=FlexTip/ -o /path/outside/repo/FlexTip-Forever.zip HEAD
   ```
-  `.gitattributes` marks the dev files `export-ignore`. GitHub's "Download ZIP" gives a `FlexTip-main` folder, which users must rename to `FlexTip`.
-- To release a new version, bump `## Version` in `FlexTip.toc` and the fallback version string in `Core.lua`.
+  `.gitattributes` marks the dev files `export-ignore`, so the zip holds only the addon, README and LICENSE.
+- Releasing a new version:
+  1. Bump `## Version` in `FlexTip.toc` and the fallback version string in `Core.lua`.
+  2. Push.
+  3. Create the GitHub release `vX.Y.Z` on `main` and attach `FlexTip-Forever.zip`. The README's install steps link to the latest release.
+- `docs/rows.png` must match real behavior: `tests/test_parts.lua` checks the exact tooltips it shows. Change both together.
 - The session's GitHub proxy can't change repository settings (description, topics). The owner sets those on GitHub.
 - This is a public repo:
   - Commit with the account's GitHub noreply address, never a personal email.

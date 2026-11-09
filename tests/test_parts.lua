@@ -132,6 +132,23 @@ hover("mouseover")
 check(rows():find("Misär - Initiate", 1, true) ~= nil, "secret row left alone: " .. rows())
 tip:Hide()
 
+-- The README illustration (docs/rows.png) shows exactly what these settings do
+M.secret["Misär - Initiate"] = nil
+FT:ResetAll()
+M.units.aldric = { name = "Aldric", realm = "Argent Dawn", nameLine = "Sergeant Aldric-Argent Dawn", pvpName = "Sergeant Aldric",
+    player = true, class = "PALADIN", classLocal = "Paladin", race = "Human", level = 22, faction = "Alliance",
+    guild = "Silver Lanterns", rank = "Initiate" }
+for _, row in ipairs({ "realm", "playerTitle", "guildRank", "race", "class", "faction", "questGivers" }) do
+    FT:SetRow(row, false)
+end
+hover("aldric")
+check(rows() == "Aldric / Silver Lanterns / Level 22", "illustration, player: " .. rows())
+tip:Hide()
+hover("gnoll")
+check(rows() == "Riverpaw Gnoll / Level 8 / [5] Riverpaw Gnolls / Riverpaw Gnoll slain: 2/8", "illustration, NPC: " .. rows())
+tip:Hide()
+FT:ResetAll()
+
 -- The options window builds with the new checkboxes
 FT:ToggleOptions()
 check(FlexTipOptionsFrame:IsShown(), "options open")
