@@ -80,14 +80,14 @@ check(rows():find("Target: Cowboy", 1, true) ~= nil, "own target row kept: " .. 
 FT:Set("showTarget", false); FT:SetRow("other", true)
 tip:Hide()
 
--- Hiding the level row too, and the PvP row on your own tooltip
-FT:SetRow("level", false); FT:SetRow("pvp", false)
+-- Hiding the level row (level and race) too, and the PvP row on your own tooltip
+FT:SetRow("level", false); FT:SetRow("race", false); FT:SetRow("pvp", false)
 hover("player")
 check(rows() == "Me", "player with level and pvp hidden: " .. rows())
 FT:SetRow("pvp", true); M.Frame(1)
 check(rows() == "Me / PvP", "pvp back: " .. rows())
 tip:Hide()
-FT:SetRow("level", true)
+FT:SetRow("level", true); FT:SetRow("race", true)
 
 -- NPC title row
 M.units.npc = { name = "Talonaxe", title = "Gryphon Master", level = 30, race = nil }

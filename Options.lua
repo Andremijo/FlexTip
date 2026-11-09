@@ -54,10 +54,8 @@ function Column:Header(text)
     self.y = self.y - 10
 end
 
-function Column:Check(key, label, hint, get, set)
-    get = get or function() return FT.db[key] end
-    set = set or function(value) FT:Set(key, value) end
-    local cb = CreateFrame("CheckButton", nil, self.parent, "UICheckButtonTemplate")
+local function NewCheck(parent, label, hint, get, set)
+    local cb = CreateFrame("CheckButton", nil, parent, "UICheckButtonTemplate")
     cb:SetSize(24, 24)
     local text = cb:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
     text:SetPoint("LEFT", cb, "RIGHT", 2, 1)
@@ -70,16 +68,44 @@ function Column:Check(key, label, hint, get, set)
     end)
     cb.Refresh = function(self) self:SetChecked(get()) end
     AddHint(cb, hint)
-    self:Place(cb, 26)
     widgets[#widgets + 1] = cb
     return cb
 end
 
--- A checkbox for one kind of row on unit tooltips.
+local function RowAccessors(row)
+    return function() return FT.db.rows[row] end,
+        function(value) FT:SetRow(row, value) end
+end
+
+function Column:Check(key, label, hint, get, set)
+    get = get or function() return FT.db[key] end
+    set = set or function(value) FT:Set(key, value) end
+    local cb = NewCheck(self.parent, label, hint, get, set)
+    self:Place(cb, 26)
+    return cb
+end
+
+-- A checkbox for one part of what unit tooltips show.
 function Column:RowCheck(row, label, hint)
-    return self:Check(nil, label, hint,
-        function() return FT.db.rows[row] end,
-        function(value) FT:SetRow(row, value) end)
+    local get, set = RowAccessors(row)
+    return self:Check(nil, label, hint, get, set)
+end
+
+-- Two row checkboxes side by side; `second` is optional.
+function Column:RowPair(first, second)
+    for index, spec in ipairs({ first, second }) do
+        local get, set = RowAccessors(spec.row)
+        local cb = NewCheck(self.parent, spec.label, spec.hint, get, set)
+        cb:SetPoint("TOPLEFT", self.parent, "TOPLEFT", self.x + (index - 1) * (self.width / 2), self.y)
+    end
+    self.y = self.y - 26
+end
+
+function Column:SubHeader(text)
+    self.y = self.y - 4
+    local label = self.parent:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
+    label:SetText(text)
+    self:Place(label, 16)
 end
 
 function Column:Note(text)
@@ -226,7 +252,7 @@ function FT:CreateOptions()
     if self.optionsFrame then return self.optionsFrame end
 
     local f = CreateFrame("Frame", "FlexTipOptionsFrame", UIParent, "BackdropTemplate")
-    f:SetSize(900, 540)
+    f:SetSize(900, 580)
     f:SetPoint("CENTER")
     f:SetFrameStrata("DIALOG")
     f:SetToplevel(true)
@@ -296,7 +322,7 @@ function FT:CreateOptions()
     right:Slider("collapseLines", "Rows shown when collapsed", 1, FormatInt,
         "Counts only rows you haven't hidden in the Rows section.")
     right:Check("collapseKeepsQuests", "Always show quest progress",
-        "Quest rows (from Questie or the game) stay visible when collapsed and don't count toward the row limit.")
+        "Quest rows (from Questie or the game) stay visible when collapsed and don't count toward the row limit. Untick them under Quests to hide them anyway.")
     right:Cycle("expandModifier", "Hold to show the full tooltip", FT.MODIFIERS,
         "While you hold this key, collapsed tooltips expand and hidden rows come back.")
     right:Header("Appearance")
@@ -306,21 +332,32 @@ function FT:CreateOptions()
     right:Slider("bgAlpha", "Background opacity", 0.05, FormatAlpha,
         "'Default' leaves Blizzard's background untouched.")
 
-    -- Right column: which rows unit tooltips show
+    -- Right column: what player and NPC tooltips show
     local rows = NewColumn(f, 612, -58, 260)
-    rows:Header("Rows (players and NPCs)")
-    rows:Note("Untick a row to hide it. The name always shows.")
-    rows:RowCheck("guild", "Guild")
-    rows:RowCheck("level", "Level and race")
-    rows:RowCheck("class", "Class",
-        "Hides the class when it has its own row. If the class is part of the level row, hide that row instead.")
-    rows:RowCheck("faction", "Faction (Alliance / Horde)")
-    rows:RowCheck("pvp", "PvP")
-    rows:RowCheck("title", "NPC title", "The row under an NPC's name, like <Flight Master>.")
-    rows:RowCheck("quest", "Quest progress",
-        "Quest titles and objectives, from Questie or from the game itself.")
-    rows:RowCheck("other", "Other rows",
-        "Quest progress, rows added by other addons, and anything else FlexTip doesn't recognize.")
+    rows:Header("What tooltips show")
+    rows:Note("Untick anything you don't want to see. The name always shows.")
+    rows:SubHeader("Name")
+    rows:RowPair({ row = "realm", label = "Realm", hint = "The realm after the name of players from other realms." },
+        { row = "playerTitle", label = "Title", hint = "Titles in the name, like 'Sergeant' or 'the Patient'." })
+    rows:SubHeader("Guild")
+    rows:RowPair({ row = "guild", label = "Guild", hint = "The whole guild row." },
+        { row = "guildRank", label = "Rank", hint = "The guild rank, when it's shown next to the guild name." })
+    rows:SubHeader("Level row")
+    rows:RowPair({ row = "level", label = "Level" },
+        { row = "race", label = "Race / type", hint = "The race of players, or the creature type of NPCs, like Beast or Humanoid." })
+    rows:SubHeader("More rows")
+    rows:RowPair({ row = "class", label = "Class", hint = "The class row. If the class is on the level row, it's removed from there." },
+        { row = "faction", label = "Faction", hint = "Alliance or Horde." })
+    rows:RowPair({ row = "pvp", label = "PvP" },
+        { row = "title", label = "NPC title", hint = "The row under an NPC's name, like <Flight Master>." })
+    rows:SubHeader("Quests")
+    rows:RowCheck("questGivers", "Quests to pick up or turn in",
+        "Questie's rows for quests this NPC starts or ends.")
+    rows:RowCheck("quest", "Quest objectives and progress",
+        "Quest titles and objective progress, from Questie or from the game itself.")
+    rows:SubHeader("Other")
+    rows:RowCheck("other", "Rows from other addons",
+        "Rows added by other addons, and anything else FlexTip doesn't recognize.")
     rows:Check("showTarget", "Add a 'Target:' row",
         "Shows who the unit is targeting, or >> You << when it's you. Leave this off if another addon already adds one.")
 

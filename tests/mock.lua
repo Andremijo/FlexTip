@@ -288,7 +288,11 @@ _G.UnitFactionGroup = function(u) local d = M.units[u]; if d and d.faction then 
 _G.UnitExists = function(u) return M.units[u] ~= nil end
 _G.UnitIsPlayer = function(u) return M.units[u] and M.units[u].player end
 _G.UnitClass = function(u) local d = M.units[u]; if d then return d.classLocal or d.class, d.class end end
-_G.UnitName = function(u) local d = M.units[u]; return d and d.name end
+_G.UnitName = function(u) local d = M.units[u]; if d then return d.name, d.realm end end
+_G.UnitRace = function(u) local d = M.units[u]; if d and d.player then return d.race, d.race end end
+_G.UnitCreatureType = function(u) local d = M.units[u]; return d and d.creatureType end
+_G.UnitPVPName = function(u) local d = M.units[u]; return d and (d.pvpName or d.name) end
+_G.FOREIGN_SERVER_LABEL = " (*)"
 _G.UnitIsUnit = function(a, b) return a == b end
 _G.UnitReaction = function() return 5 end
 
@@ -402,11 +406,12 @@ function TipClass:SetUnit(unit)
     local d = M.units[unit]
     local T = Enum.TooltipDataLineType
     -- The unit's tooltip data, like the game builds it: one entry per row.
-    local lines = { { type = T.UnitName, leftText = d.name, r = 0.25, g = 0.5, b = 1 } }
+    local lines = { { type = T.UnitName, leftText = d.nameLine or d.name, r = 0.25, g = 0.5, b = 1 } }
     if d.guild then lines[#lines + 1] = { type = T.None, leftText = d.guild .. " - " .. d.rank, r = 0.5, g = 0.5, b = 1 } end
     if d.title then lines[#lines + 1] = { type = T.None, leftText = "<" .. d.title .. ">" } end
-    lines[#lines + 1] = { type = T.None, leftText = "Level " .. (d.level or "??") .. (d.race and (" " .. d.race) or "") }
-    if d.player and d.classLocal then lines[#lines + 1] = { type = T.None, leftText = "|cfff48cba" .. d.classLocal .. "|r" } end
+    local kind = d.race or d.creatureType
+    lines[#lines + 1] = { type = T.None, leftText = d.levelLine or ("Level " .. (d.level or "??") .. (kind and (" " .. kind) or "")) }
+    if d.player and d.classLocal and not d.noClassLine then lines[#lines + 1] = { type = T.None, leftText = "|cfff48cba" .. d.classLocal .. "|r" } end
     if d.faction then lines[#lines + 1] = { type = T.None, leftText = d.faction } end
     if d.pvp then lines[#lines + 1] = { type = T.None, leftText = "PvP" } end
     for _, q in ipairs(d.quests or {}) do

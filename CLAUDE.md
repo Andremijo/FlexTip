@@ -46,7 +46,7 @@ The current version is in `FlexTip.toc` (`## Version`). The user-facing docs are
 | `Core.lua` | Defaults, choices, ranges, `InitDB` (merges and sanitizes saved data), `FT:Set`, `FT:SetRow`, `ApplyAll`, slash commands, key binding globals, events |
 | `Tooltip.lua` | Everything that touches `GameTooltip`: anchoring, scale, appearance, health bar, unit decorations, rows, collapse, quest rows, Questie detection, hooks, preview |
 | `Mover.lua` | The draggable anchor box and its scale grip |
-| `Options.lua` | The options window (`/ftip`), 3 columns, and a small entry under Options > AddOns |
+| `Options.lua` | The options window (`/ftip`), 3 columns (the third is "What tooltips show"), and a small entry under Options > AddOns |
 | `Bindings.xml` | Key bindings: toggle collapse, lock or unlock, open options |
 | `tests/` | WoW API mock, Questie mock, tests, `run.sh` |
 | `docs/` | `rows.png`, the README illustration, plus its source `illustration.html` and `render.js`. Regenerate with `node docs/render.js` (needs Playwright). It's labeled as an illustration because nobody could take in-game screenshots here. Swap in real screenshots if the owner provides some, using made-up or the owner's own character names only. |
@@ -75,14 +75,16 @@ Applies to `GameTooltip`, `ShoppingTooltip1` and `ShoppingTooltip2`.
 ### Rows and collapse (the core of Tooltip.lua)
 1. The Unit post-call (`TooltipDataProcessor.AddTooltipPostCall`) decorates the tooltip and sets `state.pending`. Decorating means class colors and the optional "Target:" row.
 2. On the next OnUpdate, after every addon's post-call has run, `FT:UpdateRows` snapshots each line: left and right text, colors, word wrap, and row **kind**.
-3. It writes back only the rows that should show, **packed to the top**, and blanks the rest. `written[j]` records which snapshot entry line `j` shows (0 means blank), so lines are only rewritten when something changes.
-4. `FitToRows` trims the height in case the game reserves space for blank lines.
-5. Lines added later, for example by inspect-based addons, are noticed when `NumLines()` grows and are captured on the next frame.
+3. `Render` decides per entry: hidden, its own text, or a **shortened text** (see "Parts of rows"). It re-runs when `FT.settingsVersion` changes (bumped by `ApplyAll`) or the full-tooltip key goes up or down.
+4. It writes back only the rows that should show, **packed to the top**, and blanks the rest. `written[j]` records which snapshot entry line `j` shows (0 means blank) and `writtenStamp[j]` which rendering of it, so lines are only rewritten when something changes.
+5. `FitToRows` trims the height in case the game reserves space for blank lines.
+6. Lines added later, for example by inspect-based addons, are noticed when `NumLines()` grows and are captured on the next frame.
 
 The row kinds come from `Classify`:
 - `name` is always line 1 and always shown.
 - `target` is FlexTip's own row.
-- `quest` comes from Questie, or from the game's quest rows.
+- `questgiver` is a Questie row with one of Questie's quest icons (`Questie\Icons\` in the text): a quest this NPC starts or ends.
+- `quest` is any other Questie row (objective titles and progress), or one of the game's quest rows.
 - `guild` is matched with `GetGuildInfo`.
 - `level` is matched with the prefix from `TOOLTIP_UNIT_LEVEL`.
 - `class` is the localized class name on its own row.
@@ -92,7 +94,15 @@ The row kinds come from `Classify`:
 - `other` is anything else.
 - `unknown` covers secret text, or no unit to compare with. These rows always show.
 
-Collapse keeps the first `collapseLines` rows that pass the row filter. Quest rows don't count toward that limit while `collapseKeepsQuests` is on. Holding `expandModifier` (Shift by default) shows every row, hidden ones included.
+### Parts of rows
+`db.rows` has one switch per part. Some rows are shortened instead of hidden:
+- **Name** (`realm`, `playerTitle`): `RenderName` replaces `UnitPVPName` with the plain name, and drops `-Realm` and `FOREIGN_SERVER_LABEL`.
+- **Guild** (`guild` hides the row, `guildRank`): `RenderGuild` shows just the guild name when the rank is in the row.
+- **Level row** (`level`, `race`, plus `class` when the class is on this row): `RenderLevel` rebuilds the row from the parts that stay. The level comes from the number in the row, formatted with `TOOLTIP_UNIT_LEVEL`. The race is `UnitRace` for players and `UnitCreatureType` for NPCs. With every part off, the row is hidden.
+- Secret rows are never shortened; they show in full if their row is on.
+- `InitDB` migrates 1.2.0 settings: old `level = false` sets `race = false`, and old `quest = false` sets `questGivers = false`.
+
+Collapse keeps the first `collapseLines` rows that pass the row filter. Quest rows (both kinds) don't count toward that limit while `collapseKeepsQuests` is on. Holding `expandModifier` (Shift by default) shows every row as the game wrote it, hidden and shortened ones included.
 
 ### Questie support (findings from Questie's source, Nov 2026)
 - On Forever, Questie works like this:

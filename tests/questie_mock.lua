@@ -30,9 +30,14 @@ end
 TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.Unit, function(tip)
     if not Q.enabled or Q.inInstance then return end
     local d = M.units[tip.__unit]
+    if d.giver then
+        Add(tip, "|TInterface\\Addons\\Questie\\Icons\\tooltip_available.png:14:14:0:0:32:32:0:32:0:32:255:255:0|t|cFFFFFF00[6] " .. d.giver .. "|r")
+    end
     for _, q in ipairs(d.quests or {}) do
         if q.type == "QuestTitle" then
-            Add(tip, "|TInterface\\Addons\\Questie\\Icons\\tooltip_complete.png:14|t|cFFFFFF00[5] " .. q.text .. "|r")
+            -- Objective blocks start with the plain quest name; only quests to pick up
+            -- or turn in get Questie's quest icons.
+            Add(tip, "|cFFFFFF00[5] " .. q.text .. "|r")
         else
             Add(tip, "   |cFFEEEEEE" .. q.text .. "|r")
         end

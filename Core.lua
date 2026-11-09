@@ -3,7 +3,7 @@ local ADDON_NAME, FT = ...
 _G.FlexTip = FT
 
 local GetMetadata = C_AddOns and C_AddOns.GetAddOnMetadata or GetAddOnMetadata
-FT.version = (GetMetadata and GetMetadata(ADDON_NAME, "Version")) or "1.2.0"
+FT.version = (GetMetadata and GetMetadata(ADDON_NAME, "Version")) or "1.3.0"
 
 ---------------------------------------------------------------------------
 -- Choices and ranges (shared by validation and the options window)
@@ -75,8 +75,17 @@ FT.defaults = {
     classColorBorder = false,
     hideHealthBar = false,
     showTarget = false,
-    -- Rows on player/NPC tooltips (the name always shows).
-    rows = { guild = true, level = true, class = true, faction = true, pvp = true, title = true, quest = true, other = true },
+    -- What player/NPC tooltips show (the name itself always shows). Some rows
+    -- have several parts: name row (realm, title), guild row (rank),
+    -- level row (level, race or creature type, and class when it's there).
+    rows = {
+        realm = true, playerTitle = true,
+        guild = true, guildRank = true,
+        level = true, race = true,
+        class = true, faction = true, pvp = true, title = true,
+        questGivers = true, quest = true,
+        other = true,
+    },
     bgAlpha = 1,                 -- 1 = leave Blizzard's background alone
     hideInCombat = "NEVER",
     debug = false,
@@ -138,6 +147,12 @@ end
 function FT:InitDB()
     if type(FlexTipDB) ~= "table" then FlexTipDB = {} end
     local db = FlexTipDB
+    -- Before 1.3.0 "level" covered the race too and "quest" covered quest
+    -- givers too; keep those rows hidden for anyone who had hidden them.
+    if type(db.rows) == "table" then
+        if db.rows.level == false and db.rows.race == nil then db.rows.race = false end
+        if db.rows.quest == false and db.rows.questGivers == nil then db.rows.questGivers = false end
+    end
     for key, default in pairs(self.defaults) do
         if type(default) == "table" then
             if type(db[key]) ~= "table" then db[key] = ShallowCopy(default) end
@@ -177,6 +192,8 @@ end
 
 -- Re-apply every setting (cheap and idempotent).
 function FT:ApplyAll()
+    -- Lets a tooltip that's already on screen notice the change.
+    self.settingsVersion = (self.settingsVersion or 0) + 1
     if not self.ready then return end
     self:ApplyScale()
     self:UpdateMover()

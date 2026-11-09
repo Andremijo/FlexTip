@@ -27,6 +27,8 @@ local snapshot = {} -- [line] = original text, colors and row kind of each line
 local written = {}  -- [line] = which snapshot entry that line shows now (0 = blank)
 local visible = {}  -- scratch list of the snapshot entries to show, in order
 local questieLines = {} -- [line] = true for lines that Questie added
+local writtenStamp = {} -- [line] = render stamp of the text written there (0 = original)
+local renderStamp = 0
 FT.state = state
 
 local lastError
@@ -258,31 +260,55 @@ local function IsLevelRow(text)
     return text:find(levelSuffix, 1, true) ~= nil
 end
 
+-- A value we may compare and print, or nil when it is missing or secret.
+local function Public(value)
+    if issecretvalue(value) then return nil end
+    return value
+end
+
 local function GatherUnitInfo(unit)
     local info = {}
     if not (unit and UnitExists(unit)) then return info end
     if UnitIsPlayer(unit) then
         info.player = true
-        local guild = GetGuildInfo(unit)
-        if guild and not issecretvalue(guild) and guild ~= "" then info.guild = guild end
-        local className = UnitClass(unit)
-        if className and not issecretvalue(className) then info.class = className end
+        local guild, rank = GetGuildInfo(unit)
+        guild, rank = Public(guild), Public(rank)
+        if guild and guild ~= "" then
+            info.guild = guild
+            if rank and rank ~= "" then info.guildRank = rank end
+        end
+        info.class = Public((UnitClass(unit)))
+        info.race = Public((UnitRace(unit)))
+        local name, realm = UnitName(unit)
+        info.name, info.realm = Public(name), Public(realm)
+        if UnitPVPName then info.pvpName = Public((UnitPVPName(unit))) end
     else
         info.npc = true
+        if UnitCreatureType then info.race = Public((UnitCreatureType(unit))) end
     end
     local _, faction = UnitFactionGroup(unit)
-    if faction and not issecretvalue(faction) then info.faction = faction end
+    info.faction = Public(faction)
     info.known = true
     return info
 end
 
--- Row kinds: name, target, quest, guild, level, class, faction, pvp, title, other.
--- "unknown" rows (secret text, or no unit to compare with) always show.
+-- Row kinds: name, target, questgiver, quest, guild, level, class, faction,
+-- pvp, title, other. "unknown" rows (secret text, or no unit to compare with)
+-- always show.
 local function Classify(i, text)
     if i == 1 then return "name" end
     if i == state.targetLine then return "target" end
     -- Questie's rows are known by who added them, so this works for secret text too.
-    if questieLines[i] then return "quest" end
+    -- Its rows for quests to pick up or turn in carry one of its quest icons.
+    if questieLines[i] then
+        if not issecretvalue(text) and type(text) == "string" then
+            local lower = text:lower()
+            if lower:find("questie\\icons\\", 1, true) and not lower:find("icons\\questie.png", 1, true) then
+                return "questgiver"
+            end
+        end
+        return "quest"
+    end
     if issecretvalue(text) then return "unknown" end
     local info = state.info or {}
     if text == nil then return info.known and "other" or "unknown" end
@@ -301,6 +327,93 @@ local function Classify(i, text)
     if text == PVP then return "pvp" end
     if info.npc and i == 2 then return "title" end
     return info.known and "other" or "unknown"
+end
+
+---------------------------------------------------------------------------
+-- Parts of rows: some rows hold several pieces of information, and each can
+-- be turned off on its own. These return the text to show instead of the
+-- original, "" to hide the row, or nil to keep the original text.
+---------------------------------------------------------------------------
+local function ReplacePlain(text, old, new)
+    local first, last = text:find(old, 1, true)
+    if not first then return text end
+    return text:sub(1, first - 1) .. new .. text:sub(last + 1)
+end
+
+-- "Sergeant Vex-Argent Dawn": the realm and the title can go.
+local function RenderName(text)
+    local rows, info = FT.db.rows, state.info
+    if (rows.realm and rows.playerTitle) or not (info and info.player and info.name) then return nil end
+    local out = text
+    if not rows.playerTitle and info.pvpName and info.pvpName ~= info.name then
+        out = ReplacePlain(out, info.pvpName, info.name)
+    end
+    if not rows.realm then
+        if info.realm and info.realm ~= "" then
+            out = ReplacePlain(out, "-" .. info.realm, "")
+            out = ReplacePlain(out, "-" .. info.realm:gsub(" ", ""), "")
+        end
+        if FOREIGN_SERVER_LABEL then out = ReplacePlain(out, FOREIGN_SERVER_LABEL, "") end
+    end
+    if out ~= text then return out end
+end
+
+-- "Misär - Initiate": the rank can go. (Hiding the guild hides the row.)
+local function RenderGuild(text)
+    local info = state.info
+    if FT.db.rows.guildRank or not (info and info.guild and info.guildRank) then return nil end
+    if StripCodes(text):find(info.guildRank, 1, true) then return info.guild end
+end
+
+local function LevelText(stripped)
+    local number = stripped:match("%d+") or (stripped:find("??", 1, true) and "??")
+    if not number then return nil end
+    local ok, out = pcall(string.format, TOOLTIP_UNIT_LEVEL or "Level %s", number)
+    return ok and out or ((LEVEL or "Level") .. " " .. number)
+end
+
+-- "Level 22 Human" (or "Level 80 Human Paladin", "Level 5 Beast"): the level,
+-- the race or creature type, and the class when it shares this row.
+local function RenderLevel(text)
+    local rows, info = FT.db.rows, state.info or {}
+    local stripped = StripCodes(text)
+    local hasRace = info.race and stripped:find(info.race, 1, true)
+    local hasClass = info.class and stripped:find(info.class, 1, true)
+    if rows.level and (rows.race or not hasRace) and (rows.class or not hasClass) then return nil end
+    local parts = {}
+    if rows.level then parts[#parts + 1] = LevelText(stripped) end
+    if rows.race and hasRace then parts[#parts + 1] = info.race end
+    if rows.class and hasClass then parts[#parts + 1] = info.class end
+    return table.concat(parts, " ")
+end
+
+local RENDER = { name = RenderName, guild = RenderGuild, level = RenderLevel }
+
+local function RowShown(kind)
+    local rows = FT.db.rows
+    if kind == "level" then return rows.level or rows.race or rows.class end
+    if kind == "questgiver" then return rows.questGivers end
+    local shown = rows[kind]
+    if shown == nil then return true end -- name, target and unknown rows
+    return shown
+end
+
+-- Decide what an entry shows: hidden, its own text, or a shortened text.
+-- `full` (the full-tooltip key is held) shows every row as it came.
+local function Render(entry, full)
+    entry.display, entry.hidden, entry.stamp = nil, false, 0
+    if full then return end
+    entry.hidden = not RowShown(entry.kind)
+    local render = RENDER[entry.kind]
+    if entry.hidden or not render or issecretvalue(entry.left) or type(entry.left) ~= "string" then return end
+    local ok, out = pcall(render, entry.left)
+    if not ok or out == nil then return end
+    if out == "" then
+        entry.hidden = true
+    else
+        renderStamp = renderStamp + 1
+        entry.display, entry.stamp = out, renderStamp
+    end
 end
 
 local function CaptureLine(i)
@@ -324,14 +437,17 @@ local function CaptureLine(i)
     end
     local ok, kind = pcall(Classify, i, entry.left)
     entry.kind = ok and kind or "unknown"
-    written[i] = i
+    entry.display, entry.hidden, entry.stamp = nil, false, 0
+    written[i], writtenStamp[i] = i, 0
 end
 
 local function WriteLine(j, entry)
     local left, right = GetLine(j)
     if not left then return end
     if entry.wrap ~= nil and left.SetWordWrap then left:SetWordWrap(entry.wrap) end
-    left:SetText(entry.left)
+    local text = entry.left
+    if entry.display ~= nil then text = entry.display end
+    left:SetText(text)
     if entry.lr then left:SetTextColor(entry.lr, entry.lg, entry.lb) end
     if right then
         right:SetText(entry.right)
@@ -377,12 +493,6 @@ local function FullTooltipKeyDown()
     return false
 end
 
-local function RowShown(kind)
-    local shown = FT.db.rows[kind]
-    if shown == nil then return true end -- name, target and unknown rows
-    return shown
-end
-
 local function SafeUnitInfo(unit)
     local ok, info = pcall(GatherUnitInfo, unit)
     return ok and info or {}
@@ -392,27 +502,37 @@ end
 -- addons add later, setting changes, and the full-tooltip key right away.
 function FT:UpdateRows(tip)
     local n = tip:NumLines()
+    local full = FullTooltipKeyDown() and true or false
+    -- Re-render when a setting changes or the full-tooltip key goes up or down.
+    local renderKey = (self.settingsVersion or 0) * 2 + (full and 1 or 0)
     if state.pending then
         state.pending = false
         state.info = SafeUnitInfo(state.unit)
         for i = 1, n do CaptureLine(i) end
         state.numLines = n
+        state.renderKey = nil
     elseif n > state.numLines then
-        for i = state.numLines + 1, n do CaptureLine(i) end
+        for i = state.numLines + 1, n do
+            CaptureLine(i)
+            Render(snapshot[i], full)
+        end
         state.numLines = n
     elseif n < state.numLines then
         state.numLines = n
     end
+    if state.renderKey ~= renderKey then
+        for i = 1, n do Render(snapshot[i], full) end
+        state.renderKey = renderKey
+    end
 
-    local full = FullTooltipKeyDown()
     local limit = (self.db.collapsed and not full) and self.db.collapseLines or n
     local keepQuests = self.db.collapseKeepsQuests
     local count, counted = 0, 0
     for i = 1, n do
-        local kind = snapshot[i].kind
-        if full or RowShown(kind) then
+        local entry = snapshot[i]
+        if not entry.hidden then
             -- Quest rows can stay visible without using up the collapsed row limit.
-            local free = keepQuests and kind == "quest"
+            local free = keepQuests and (entry.kind == "quest" or entry.kind == "questgiver")
             if free or counted < limit then
                 if not free then counted = counted + 1 end
                 count = count + 1
@@ -424,9 +544,10 @@ function FT:UpdateRows(tip)
     local changed = false
     for j = 1, n do
         local want = j <= count and visible[j] or 0
-        if written[j] ~= want then
+        local stamp = want > 0 and snapshot[want].stamp or 0
+        if written[j] ~= want or writtenStamp[j] ~= stamp then
             if want == 0 then BlankLine(j) else WriteLine(j, snapshot[want]) end
-            written[j] = want
+            written[j], writtenStamp[j] = want, stamp
             changed = true
         end
     end

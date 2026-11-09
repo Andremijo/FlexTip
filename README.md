@@ -31,9 +31,9 @@ Put that number in the `## Interface:` line of `FlexTip.toc`. You can also tick 
 | Move the tooltip | Click **Unlock anchor** (or `/ftip unlock`), then drag the blue box. Right-click it to lock |
 | Preview | Click the blue box, or press **Preview** in the options |
 | Resize | Scale slider, mouse wheel over the box, or drag the box's corner grip |
-| Choose rows | In the **Rows** column, untick the rows to hide (guild, level, class, faction, PvP, NPC title, other) |
+| Choose what shows | In the **What tooltips show** column, untick anything you don't want to see |
 | Collapse | Tick **Collapse unit tooltips**, or bind a key under Options > Keybindings > AddOns > FlexTip |
-| See everything | Hold Shift (configurable) to show the full tooltip, including hidden rows |
+| See everything | Hold Shift (configurable) to show the full tooltip as the game wrote it |
 
 ### Settings
 
@@ -43,9 +43,18 @@ Put that number in the `## Interface:` line of `FlexTip.toc`. You can also tick 
   - Which corner follows the cursor, and the cursor offsets.
 - **Size**
   - Tooltip scale from 0.5x to 2x. Item comparison tooltips get the same scale.
-- **Rows** on player and NPC tooltips
-  - Show or hide guild, level and race, class, faction, PvP, NPC title (like `<Flight Master>`), quest progress, and other rows (rows from other addons).
-  - The name always shows. Hidden rows leave no gaps, because the remaining rows move up.
+- **What player and NPC tooltips show.** Each item has its own checkbox:
+
+  | Group | Choices | Example |
+  |---|---|---|
+  | Name | Realm, Title | "Sergeant Vex-Argent Dawn" becomes "Vex" |
+  | Guild | Guild (the whole row), Rank | "Misär - Initiate" becomes "Misär" |
+  | Level row | Level, Race / creature type | "Level 22 Human" becomes "Level 22" or "Human" |
+  | More rows | Class, Faction, PvP, NPC title (like `<Flight Master>`) | |
+  | Quests | Quests to pick up or turn in, Quest objectives and progress | |
+  | Other | Rows from other addons, an extra "Target:" row | |
+
+  - The name itself always shows. Hidden rows leave no gaps, because the remaining rows move up.
   - Untick guild, class and faction to get just the name and level.
 - **Collapse**
   - How many rows to keep (1 to 6), counting only rows you haven't hidden.
@@ -76,20 +85,21 @@ Put that number in the `## Interface:` line of `FlexTip.toc`. You can also tick 
 
 FlexTip works alongside [Questie](https://github.com/Questie/Questie):
 
-- The quest titles and objectives Questie adds to NPC tooltips count as **Quest progress** rows, not "Other rows". Hiding other rows or collapsing the tooltip keeps them (unless you untick Quest progress).
+- Questie's rows on NPC tooltips are quest rows, not "Rows from other addons". Under **Quests** you can show or hide them in two groups: quests this NPC starts or ends (the rows with Questie's quest icons), and quest objectives and progress.
+- Hiding other addons' rows or collapsing the tooltip keeps quest rows.
 - This also works inside instances, where Questie shows the game's quest rows in a form addons can't read.
 - Questie's wrapped objective rows keep wrapping when FlexTip moves them up.
 - Questie's map-icon tooltips follow your cursor as usual; FlexTip doesn't move them.
 
-Without Questie, the game's own quest rows count as Quest progress too.
+Without Questie, the game's own quest rows count as quest objectives and progress.
 
 ## Notes
 
 - **Combat restrictions.** WoW Forever uses Midnight's addon rules, so some values are "secret" during restricted combat. When that happens, FlexTip skips the extras it can't read, such as the target line or class colors, and the tooltip itself keeps working. `/ftip debug` shows what was skipped.
 - **Edit Mode.** When an anchor setting is "Blizzard default", the tooltip uses the position you set in Edit Mode (HUD Tooltip).
 - **Rows and collapse** only apply to unit tooltips (players and NPCs). Item and spell tooltips stay full.
-- **Class row:** some tooltips put the class on the level row ("Level 80 Human Paladin"). Then the class can't be hidden on its own; hide the level row instead.
-- **Rows FlexTip can't read** (secret during restricted combat) are always shown.
+- **Class on the level row:** some tooltips show "Level 80 Human Paladin (Player)". Unticking Class or Race then removes that word from the row, and the "(Player)" tag goes too.
+- **Rows FlexTip can't read** (secret during restricted combat) are always shown in full.
 
 ## Development
 
