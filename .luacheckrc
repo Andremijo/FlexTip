@@ -12,7 +12,7 @@ globals = {
     "FlexTip_OnAddonCompartmentClick",
 }
 read_globals = {
-    "C_AddOns", "CreateFrame", "CUSTOM_CLASS_COLORS", "Enum", "FACTION_ALLIANCE", "FACTION_BAR_COLORS",
+    "C_AddOns", "CreateFrame", "debugstack", "IsAddOnLoaded", "issecrettable", "CUSTOM_CLASS_COLORS", "Enum", "FACTION_ALLIANCE", "FACTION_BAR_COLORS",
     "FACTION_HORDE", "GameTooltip", "GetAddOnMetadata", "GetCursorPosition", "GetGuildInfo", "hooksecurefunc",
     "InCombatLockdown", "IsAltKeyDown", "IsControlKeyDown", "issecretvalue", "IsShiftKeyDown", "LEVEL", "NO",
     "PlaySound", "PVP", "RAID_CLASS_COLORS", "Settings", "SOUNDKIT", "StaticPopup_Show", "strsplit", "strtrim",

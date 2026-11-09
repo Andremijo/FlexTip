@@ -39,11 +39,12 @@ Put that number in the `## Interface:` line of `FlexTip.toc`. You can also tick 
 - **Size**
   - Tooltip scale from 0.5x to 2x. Item comparison tooltips get the same scale.
 - **Rows** on player and NPC tooltips
-  - Show or hide guild, level and race, class, faction, PvP, NPC title (like `<Flight Master>`), and other rows (quest progress, rows from other addons).
+  - Show or hide guild, level and race, class, faction, PvP, NPC title (like `<Flight Master>`), quest progress, and other rows (rows from other addons).
   - The name always shows. Hidden rows leave no gaps, because the remaining rows move up.
   - Untick guild, class and faction to get just the name and level.
 - **Collapse**
   - How many rows to keep (1 to 6), counting only rows you haven't hidden.
+  - Quest progress can stay visible when collapsed without counting toward that limit (on by default).
   - Which key shows the full tooltip while you hold it (Shift, Ctrl, Alt or none). It brings back hidden rows too.
   - Rows added later by other addons are handled too.
 - **Appearance**
@@ -65,6 +66,17 @@ Put that number in the `## Interface:` line of `FlexTip.toc`. You can also tick 
 /ftip resetall   reset every setting
 /ftip debug      print errors that FlexTip would otherwise hide
 ```
+
+## Questie
+
+FlexTip works alongside [Questie](https://github.com/Questie/Questie):
+
+- The quest titles and objectives Questie adds to NPC tooltips count as **Quest progress** rows, not "Other rows". Hiding other rows or collapsing the tooltip keeps them (unless you untick Quest progress).
+- This also works inside instances, where Questie shows the game's quest rows in a form addons can't read.
+- Questie's wrapped objective rows keep wrapping when FlexTip moves them up.
+- Questie's map-icon tooltips follow your cursor as usual; FlexTip doesn't move them.
+
+Without Questie, the game's own quest rows count as Quest progress too.
 
 ## Notes
 

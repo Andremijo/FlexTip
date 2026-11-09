@@ -295,6 +295,8 @@ function FT:CreateOptions()
         "Show only the first rows of player and NPC tooltips.\n\nTip: bind a key under Options > Keybindings > AddOns > FlexTip to toggle this quickly.")
     right:Slider("collapseLines", "Rows shown when collapsed", 1, FormatInt,
         "Counts only rows you haven't hidden in the Rows section.")
+    right:Check("collapseKeepsQuests", "Always show quest progress",
+        "Quest rows (from Questie or the game) stay visible when collapsed and don't count toward the row limit.")
     right:Cycle("expandModifier", "Hold to show the full tooltip", FT.MODIFIERS,
         "While you hold this key, collapsed tooltips expand and hidden rows come back.")
     right:Header("Appearance")
@@ -315,6 +317,8 @@ function FT:CreateOptions()
     rows:RowCheck("faction", "Faction (Alliance / Horde)")
     rows:RowCheck("pvp", "PvP")
     rows:RowCheck("title", "NPC title", "The row under an NPC's name, like <Flight Master>.")
+    rows:RowCheck("quest", "Quest progress",
+        "Quest titles and objectives, from Questie or from the game itself.")
     rows:RowCheck("other", "Other rows",
         "Quest progress, rows added by other addons, and anything else FlexTip doesn't recognize.")
     rows:Check("showTarget", "Add a 'Target:' row",

@@ -3,7 +3,6 @@ local _, FT = ...
 
 local GameTooltip = GameTooltip
 local UIParent = UIParent
-local math_max = math.max
 local issecretvalue = issecretvalue or function() return false end
 
 -- State for the tooltip currently on screen. It lives in our own table and is
@@ -18,6 +17,7 @@ local state = {
     unit = nil,        -- unit token of the tooltip
     info = nil,        -- guild/class/faction of the unit, used to recognize rows
     targetLine = nil,  -- index of the "Target:" row we added
+    questTexts = nil,  -- texts of the game's own quest rows for this unit
     classColor = nil,  -- class color of the unit, if it is a player
     numLines = 0,      -- number of lines captured in `snapshot`
     packed = 0,        -- number of visible rows while some are hidden, else 0
@@ -26,6 +26,7 @@ local state = {
 local snapshot = {} -- [line] = original text, colors and row kind of each line
 local written = {}  -- [line] = which snapshot entry that line shows now (0 = blank)
 local visible = {}  -- scratch list of the snapshot entries to show, in order
+local questieLines = {} -- [line] = true for lines that Questie added
 FT.state = state
 
 local lastError
@@ -199,7 +200,7 @@ end
 
 function FT:DecorateUnit(tip)
     local _, unit = tip:GetUnit()
-    if unit and issecretvalue(unit) then unit = nil end
+    if issecretvalue(unit) then unit = nil end
     if not unit and UnitExists("mouseover") then unit = "mouseover" end
     state.unit = unit
     if not unit then return end
@@ -275,15 +276,22 @@ local function GatherUnitInfo(unit)
     return info
 end
 
--- Row kinds: name, target, guild, level, class, faction, pvp, title, other.
+-- Row kinds: name, target, quest, guild, level, class, faction, pvp, title, other.
 -- "unknown" rows (secret text, or no unit to compare with) always show.
 local function Classify(i, text)
     if i == 1 then return "name" end
     if i == state.targetLine then return "target" end
+    -- Questie's rows are known by who added them, so this works for secret text too.
+    if questieLines[i] then return "quest" end
     if issecretvalue(text) then return "unknown" end
     local info = state.info or {}
     if text == nil then return info.known and "other" or "unknown" end
     text = StripCodes(text)
+    if state.questTexts then
+        for _, questText in ipairs(state.questTexts) do
+            if text:find(questText, 1, true) then return "quest" end
+        end
+    end
     if info.guild and text:find(info.guild, 1, true) then return "guild" end
     if IsLevelRow(text) then return "level" end
     if info.class and (text == info.class or text:sub(-#info.class - 1) == " " .. info.class) then
@@ -302,8 +310,10 @@ local function CaptureLine(i)
     entry.left = left and left:GetText()
     if left then
         entry.lr, entry.lg, entry.lb = left:GetTextColor()
+        -- Questie's objective rows wrap; keep that when the row moves.
+        entry.wrap = left.CanWordWrap and left:CanWordWrap()
     else
-        entry.lr = nil
+        entry.lr, entry.wrap = nil, nil
     end
     if right then
         entry.right = right:GetText()
@@ -320,6 +330,7 @@ end
 local function WriteLine(j, entry)
     local left, right = GetLine(j)
     if not left then return end
+    if entry.wrap ~= nil and left.SetWordWrap then left:SetWordWrap(entry.wrap) end
     left:SetText(entry.left)
     if entry.lr then left:SetTextColor(entry.lr, entry.lg, entry.lb) end
     if right then
@@ -346,34 +357,16 @@ local function Relayout(tip)
 end
 
 -- Some clients still reserve a little room for blanked lines; trim the tooltip
--- to end just below the last visible row.
+-- to end just below the last visible row. The width is left to the game, which
+-- measures the rows that still have text (and knows about wrapped rows).
 local function FitToRows(tip, count)
     local first = GetLine(1)
     local last = GetLine(count)
     if not (first and last) then return end
-    local top, left = tip:GetTop(), tip:GetLeft()
-    local firstTop, firstLeft = first:GetTop(), first:GetLeft()
-    local lastBottom = last:GetBottom()
-    if not (top and left and firstTop and firstLeft and lastBottom) then return end
-    local padX, padY = firstLeft - left, top - firstTop
-
-    local height = (top - lastBottom) + padY
+    local top, firstTop, lastBottom = tip:GetTop(), first:GetTop(), last:GetBottom()
+    if not (top and firstTop and lastBottom) then return end
+    local height = (top - lastBottom) + (top - firstTop)
     if tip:GetHeight() - height > 1 then tip:SetHeight(height) end
-
-    local width = 0
-    for i = 1, count do
-        local l, r = GetLine(i)
-        local w = l:GetStringWidth() or 0
-        if issecretvalue(w) then return end
-        if r and r:IsShown() then
-            local rw = r:GetStringWidth() or 0
-            if issecretvalue(rw) then return end
-            if rw > 0 then w = w + 20 + rw end
-        end
-        width = math_max(width, w)
-    end
-    width = width + padX * 2
-    if width > padX * 2 and tip:GetWidth() - width > 1 then tip:SetWidth(width) end
 end
 
 local function FullTooltipKeyDown()
@@ -390,13 +383,18 @@ local function RowShown(kind)
     return shown
 end
 
+local function SafeUnitInfo(unit)
+    local ok, info = pcall(GatherUnitInfo, unit)
+    return ok and info or {}
+end
+
 -- Runs every frame while a unit tooltip is shown, so it picks up lines other
 -- addons add later, setting changes, and the full-tooltip key right away.
 function FT:UpdateRows(tip)
     local n = tip:NumLines()
     if state.pending then
         state.pending = false
-        state.info = GatherUnitInfo(state.unit)
+        state.info = SafeUnitInfo(state.unit)
         for i = 1, n do CaptureLine(i) end
         state.numLines = n
     elseif n > state.numLines then
@@ -408,11 +406,18 @@ function FT:UpdateRows(tip)
 
     local full = FullTooltipKeyDown()
     local limit = (self.db.collapsed and not full) and self.db.collapseLines or n
-    local count = 0
+    local keepQuests = self.db.collapseKeepsQuests
+    local count, counted = 0, 0
     for i = 1, n do
-        if count < limit and (full or RowShown(snapshot[i].kind)) then
-            count = count + 1
-            visible[count] = i
+        local kind = snapshot[i].kind
+        if full or RowShown(kind) then
+            -- Quest rows can stay visible without using up the collapsed row limit.
+            local free = keepQuests and kind == "quest"
+            if free or counted < limit then
+                if not free then counted = counted + 1 end
+                count = count + 1
+                visible[count] = i
+            end
         end
     end
 
@@ -448,6 +453,64 @@ function FT:OnEnterCombat()
 end
 
 ---------------------------------------------------------------------------
+-- Quest rows: the game's own (from the tooltip data) and Questie's
+---------------------------------------------------------------------------
+local function IsSecretTable(value)
+    return issecretvalue(value) or (issecrettable ~= nil and issecrettable(value))
+end
+
+-- Texts of the QuestTitle/QuestObjective/QuestPlayer rows in the unit's
+-- tooltip data. Secret entries are skipped.
+local function CollectQuestTexts(data)
+    local lineTypes = Enum and Enum.TooltipDataLineType
+    if not lineTypes or IsSecretTable(data) or type(data) ~= "table" then return nil end
+    local lines = data.lines
+    if IsSecretTable(lines) or type(lines) ~= "table" then return nil end
+    local questTypes = {}
+    for _, name in ipairs({ "QuestTitle", "QuestObjective", "QuestPlayer" }) do
+        if lineTypes[name] then questTypes[lineTypes[name]] = true end
+    end
+    local texts = {}
+    for _, line in ipairs(lines) do
+        if not IsSecretTable(line) and type(line) == "table" then
+            local lineType, text = line.type, line.leftText
+            if not issecretvalue(lineType) and questTypes[lineType]
+                and not issecretvalue(text) and type(text) == "string" and text ~= "" then
+                texts[#texts + 1] = StripCodes(text)
+            end
+        end
+    end
+    return #texts > 0 and texts or nil
+end
+
+-- True when the code that called GameTooltip:AddLine lives in Questie's folder.
+local function CalledFromQuestie()
+    local stack = debugstack(2, 6, 0)
+    if type(stack) ~= "string" then return false end
+    for frame in stack:gmatch("[^\n]+") do
+        if not frame:find("[C]", 1, true) and not frame:find("[/\\]FlexTip[/\\]") then
+            return frame:find("[/\\]Questie[/\\]") ~= nil
+        end
+    end
+    return false
+end
+
+local function OnAddLine(tip)
+    if tip == GameTooltip and CalledFromQuestie() then
+        questieLines[tip:NumLines()] = true
+    end
+end
+
+local function ResetLineSources()
+    for i in pairs(questieLines) do questieLines[i] = nil end
+end
+
+local function IsLoaded(addon)
+    if C_AddOns and C_AddOns.IsAddOnLoaded then return C_AddOns.IsAddOnLoaded(addon) end
+    return IsAddOnLoaded ~= nil and IsAddOnLoaded(addon)
+end
+
+---------------------------------------------------------------------------
 -- Tooltip hooks
 ---------------------------------------------------------------------------
 local function EndUnit()
@@ -456,6 +519,7 @@ local function EndUnit()
     state.unit = nil
     state.info = nil
     state.targetLine = nil
+    state.questTexts = nil
     state.classColor = nil
     state.numLines = 0
     state.packed = 0
@@ -463,6 +527,7 @@ end
 
 local function OnSetOwner(tip)
     EndUnit()
+    ResetLineSources()
     state.category = nil
     state.onMover = false
     state.follow = false
@@ -480,6 +545,7 @@ end
 
 local function OnHide(tip)
     EndUnit()
+    ResetLineSources()
     RestoreColors(tip)
     state.category = nil
     state.onMover = false
@@ -488,6 +554,7 @@ end
 
 local function OnCleared(tip)
     EndUnit()
+    ResetLineSources()
     if tip:IsShown() then SafeCall(FT.ApplyAppearance, FT, tip) end
 end
 
@@ -496,10 +563,12 @@ local function OnUpdate(tip)
     if state.isUnit then SafeCall(FT.UpdateRows, FT, tip) end
 end
 
-local function OnTooltipSetUnit(tip)
+local function OnTooltipSetUnit(tip, data)
     if tip ~= GameTooltip then return end
     EndUnit()
     state.isUnit = true
+    local ok, questTexts = pcall(CollectQuestTexts, data)
+    state.questTexts = ok and questTexts or nil
     SafeCall(FT.DecorateUnit, FT, tip)
     -- Rows are captured on the next OnUpdate, after other addons have added
     -- or changed lines in their own hooks.
@@ -524,6 +593,13 @@ function FT:SetupTooltipHooks()
         TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.Unit, OnTooltipSetUnit)
     elseif GameTooltip:HasScript("OnTooltipSetUnit") then
         GameTooltip:HookScript("OnTooltipSetUnit", OnTooltipSetUnit)
+    end
+
+    -- With Questie, note which lines it adds so they count as quest rows.
+    if IsLoaded("Questie") and debugstack then
+        hooksecurefunc(GameTooltip, "AddLine", OnAddLine)
+        hooksecurefunc(GameTooltip, "AddDoubleLine", OnAddLine)
+        self.questie = true
     end
 
     local bar = GetStatusBar()

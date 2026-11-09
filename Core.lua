@@ -3,7 +3,7 @@ local ADDON_NAME, FT = ...
 _G.FlexTip = FT
 
 local GetMetadata = C_AddOns and C_AddOns.GetAddOnMetadata or GetAddOnMetadata
-FT.version = (GetMetadata and GetMetadata(ADDON_NAME, "Version")) or "1.1.0"
+FT.version = (GetMetadata and GetMetadata(ADDON_NAME, "Version")) or "1.2.0"
 
 ---------------------------------------------------------------------------
 -- Choices and ranges (shared by validation and the options window)
@@ -70,12 +70,13 @@ FT.defaults = {
     collapsed = false,
     collapseLines = 1,
     expandModifier = "SHIFT",
+    collapseKeepsQuests = true,  -- quest rows stay visible when collapsed
     classColorName = true,
     classColorBorder = false,
     hideHealthBar = false,
     showTarget = false,
     -- Rows on player/NPC tooltips (the name always shows).
-    rows = { guild = true, level = true, class = true, faction = true, pvp = true, title = true, other = true },
+    rows = { guild = true, level = true, class = true, faction = true, pvp = true, title = true, quest = true, other = true },
     bgAlpha = 1,                 -- 1 = leave Blizzard's background alone
     hideInCombat = "NEVER",
     debug = false,

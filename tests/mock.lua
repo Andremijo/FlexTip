@@ -157,6 +157,8 @@ function Region:SetFormattedText(fmt, ...) self:SetText(string.format(fmt, ...))
 function Region:GetText() return self.__text end
 function Region:GetStringWidth() return self.__sw or 0 end
 function Region:SetTextColor(r, g, b, a) self.__color = { r, g, b, a or 1 } end
+function Region:SetWordWrap(w) self.__wrap = w and true or false end
+function Region:CanWordWrap() return self.__wrap or false end
 function Region:GetTextColor() return unpack(self.__color) end
 -- Texture
 function Region:SetVertexColor(r, g, b, a) self.__vc = { r, g, b, a or 1 } end
@@ -233,10 +235,29 @@ _G.PlaySound = noop
 _G.YES, _G.NO, _G.TARGET = "Yes", "No", "Target"
 _G.RAID_CLASS_COLORS = { PALADIN = { r = 0.96, g = 0.55, b = 0.73 }, MAGE = { r = 0.25, g = 0.78, b = 0.92 } }
 _G.FACTION_BAR_COLORS = { [2] = { r = 0.9, g = 0.2, b = 0.1 }, [5] = { r = 0, g = 0.6, b = 0.1 } }
-_G.Enum = { TooltipDataType = { Unit = 2 } }
+_G.Enum = {
+    TooltipDataType = { Unit = 2 },
+    TooltipDataLineType = { None = 0, UnitName = 2, QuestObjective = 8, QuestTitle = 17, QuestPlayer = 18 },
+}
 M.postCalls = {}
-_G.TooltipDataProcessor = { AddTooltipPostCall = function(kind, fn) table.insert(M.postCalls, { kind, fn }) end }
-_G.C_AddOns = { GetAddOnMetadata = function(_, key) return key == "Version" and "1.0.0" or nil end }
+M.linePreCalls = {}
+_G.TooltipDataProcessor = {
+    AddTooltipPostCall = function(kind, fn) table.insert(M.postCalls, { kind, fn }) end,
+    AddLinePreCall = function(lineType, fn)
+        M.linePreCalls[lineType] = M.linePreCalls[lineType] or {}
+        table.insert(M.linePreCalls[lineType], fn)
+    end,
+}
+M.loaded = {}
+_G.C_AddOns = {
+    GetAddOnMetadata = function(_, key) return key == "Version" and "1.0.0" or nil end,
+    IsAddOnLoaded = function(name) return M.loaded[name] == true end,
+}
+-- debugstack reports whoever the test says is calling (M.stack), else Blizzard code.
+M.BLIZZARD_STACK = "Interface/AddOns/FlexTip/Tooltip.lua:500: in function <Interface/AddOns/FlexTip/Tooltip.lua:498>\n"
+    .. "[C]: in function `AddLine'\n"
+    .. "[string \"@Interface/AddOns/Blizzard_SharedXMLGame/Tooltip/TooltipDataHandler.lua\"]:120: in function `ProcessLine'"
+_G.debugstack = function() return M.stack or M.BLIZZARD_STACK end
 M.categories = {}
 _G.Settings = {
     RegisterCanvasLayoutCategory = function(panel, name) return { panel = panel, name = name } end,
@@ -337,11 +358,12 @@ function TipClass:ClearLines()
     self.__lines = 0
     self:RunScript("OnTooltipCleared")
 end
-function TipClass:AddLine(text, r, g, b)
+function TipClass:AddLine(text, r, g, b, wrap)
     self.__lines = self.__lines + 1
     local l = EnsureLine(self.__lines)
     l:SetText(text)
     l:SetTextColor(r or 1, g or 0.82, b or 0)
+    l:SetWordWrap(wrap)
 end
 function TipClass:AddDoubleLine(a, b2)
     self:AddLine(a)
@@ -378,15 +400,30 @@ function TipClass:SetUnit(unit)
     self:ClearLines()
     self.__unit = unit
     local d = M.units[unit]
-    self:AddLine(d.name, 0.25, 0.5, 1)
-    if d.guild then self:AddLine(d.guild .. " - " .. d.rank, 0.5, 0.5, 1) end
-    if d.title then self:AddLine("<" .. d.title .. ">", 1, 1, 1) end
-    self:AddLine("Level " .. (d.level or "??") .. (d.race and (" " .. d.race) or ""), 1, 1, 1)
-    if d.player and d.classLocal then self:AddLine("|cfff48cba" .. d.classLocal .. "|r") end
-    if d.faction then self:AddLine(d.faction, 1, 1, 1) end
-    if d.pvp then self:AddLine("PvP", 1, 1, 1) end
+    local T = Enum.TooltipDataLineType
+    -- The unit's tooltip data, like the game builds it: one entry per row.
+    local lines = { { type = T.UnitName, leftText = d.name, r = 0.25, g = 0.5, b = 1 } }
+    if d.guild then lines[#lines + 1] = { type = T.None, leftText = d.guild .. " - " .. d.rank, r = 0.5, g = 0.5, b = 1 } end
+    if d.title then lines[#lines + 1] = { type = T.None, leftText = "<" .. d.title .. ">" } end
+    lines[#lines + 1] = { type = T.None, leftText = "Level " .. (d.level or "??") .. (d.race and (" " .. d.race) or "") }
+    if d.player and d.classLocal then lines[#lines + 1] = { type = T.None, leftText = "|cfff48cba" .. d.classLocal .. "|r" } end
+    if d.faction then lines[#lines + 1] = { type = T.None, leftText = d.faction } end
+    if d.pvp then lines[#lines + 1] = { type = T.None, leftText = "PvP" } end
+    for _, q in ipairs(d.quests or {}) do
+        lines[#lines + 1] = { type = T[q.type], leftText = q.text, id = q.id, prefix = q.type == "QuestObjective" and " - " or "" }
+    end
+    local data = { type = Enum.TooltipDataType.Unit, guid = "Creature-0-0-0-0-1-0", lines = lines }
+    self.processingInfo = { tooltipData = data }
+    for _, line in ipairs(lines) do
+        local consumed = false
+        for _, fn in ipairs(M.linePreCalls[line.type] or {}) do
+            if fn(self, line) then consumed = true end
+        end
+        if not consumed then self:AddLine((line.prefix or "") .. line.leftText, line.r or 1, line.g or 1, line.b or 1) end
+    end
+    self.processingInfo = nil
     bar:Show()
-    for _, pc in ipairs(M.postCalls) do pc[2](self, {}) end
+    for _, pc in ipairs(M.postCalls) do pc[2](self, data) end
 end
 _G.GameTooltip_SetDefaultAnchor = function(t, parent)
     t:SetOwner(parent, "ANCHOR_NONE")
