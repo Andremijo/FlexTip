@@ -153,10 +153,9 @@ tests/run.sh                          # luacheck + every tests/test_*.lua
 - Releasing a new version:
   1. Bump `## Version` in `FlexTip.toc` and the fallback version string in `Core.lua`.
   2. Push.
-  3. Tag the release commit `vX.Y.Z` and push the tag.
-  4. Release `vX.Y.Z` on GitHub with `FlexTip-Forever.zip` attached. A Claude session can't create releases (GitHub's API refuses it for this session type), so hand the owner the zip and release notes to publish in the web UI. The README's install steps link to the latest release.
+  3. Build `FlexTip-Forever.zip` and write release notes, and hand both to the owner. A Claude session can't push tags or create releases (GitHub refuses both for this session type). The owner publishes the release in the web UI: new tag `vX.Y.Z` on `main`, notes, zip attached. The README's install steps link to the latest release.
 - `docs/rows.png` must match real behavior: `tests/test_parts.lua` checks the exact tooltips it shows. Change both together.
-- The session's GitHub proxy can't change repository settings (description, topics). The owner sets those on GitHub.
+- The session's GitHub access can push branches only. Repository settings (description, topics), tags and releases are refused; the owner does those on GitHub.
 - This is a public repo:
   - Commit with the account's GitHub noreply address, never a personal email.
   - Never commit tokens, personal data or session links in files.
