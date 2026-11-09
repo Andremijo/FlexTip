@@ -49,6 +49,7 @@ The current version is in `FlexTip.toc` (`## Version`). The user-facing docs are
 | `Options.lua` | The options window (`/ftip`), 3 columns, and a small entry under Options > AddOns |
 | `Bindings.xml` | Key bindings: toggle collapse, lock or unlock, open options |
 | `tests/` | WoW API mock, Questie mock, tests, `run.sh` |
+| `docs/` | `rows.png`, the README illustration, plus its source `illustration.html` and `render.js`. Regenerate with `node docs/render.js` (needs Playwright). It's labeled as an illustration because nobody could take in-game screenshots here. Swap in real screenshots if the owner provides some, using made-up or the owner's own character names only. |
 
 ## How it works
 
@@ -140,6 +141,7 @@ tests/run.sh                          # luacheck + every tests/test_*.lua
   ```
   `.gitattributes` marks the dev files `export-ignore`. GitHub's "Download ZIP" gives a `FlexTip-main` folder, which users must rename to `FlexTip`.
 - To release a new version, bump `## Version` in `FlexTip.toc` and the fallback version string in `Core.lua`.
+- The session's GitHub proxy can't change repository settings (description, topics). The owner sets those on GitHub.
 - This is a public repo:
   - Commit with the account's GitHub noreply address, never a personal email.
   - Never commit tokens, personal data or session links in files.

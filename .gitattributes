@@ -2,3 +2,4 @@ tests/ export-ignore
 .luacheckrc export-ignore
 .gitattributes export-ignore
 CLAUDE.md export-ignore
+docs/ export-ignore

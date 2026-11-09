@@ -2,6 +2,10 @@
 
 FlexTip is a World of Warcraft addon for WoW Forever that changes the game tooltip. It can move the tooltip, resize it and collapse it, and it adds a few other tweaks. It is written for the Mainline (Midnight-era) API that WoW Forever uses, so it also runs on retail.
 
+![Three tooltips side by side: Blizzard's default with every row, the same tooltip with guild, class and faction hidden, and a collapsed NPC tooltip that still shows Questie's quest progress](docs/rows.png)
+
+*Illustration of the row options, not an in-game screenshot.*
+
 ## Install
 
 1. Close the game.

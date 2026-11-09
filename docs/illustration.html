@@ -1,0 +1,90 @@
+<!doctype html>
+<!-- Illustration of FlexTip's row options for the README. Not an in-game screenshot.
+     Render with: node docs/render.js -->
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  body { margin: 0; background: transparent; }
+  #card {
+    display: inline-block;
+    padding: 28px 32px 22px;
+    background: #16191f;
+    border-radius: 14px;
+    font-family: "DejaVu Sans", "Segoe UI", Arial, sans-serif;
+  }
+  .row { display: flex; gap: 36px; align-items: flex-start; }
+  .panel { width: 300px; }
+  .caption { color: #e6e6e6; font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+  .sub { color: #9aa0a8; font-size: 12.5px; margin-bottom: 12px; min-height: 32px; line-height: 16px; }
+  .tip {
+    display: inline-block;
+    background: rgba(10, 10, 26, 0.95);
+    border: 2px solid #b9b9b9;
+    border-radius: 5px;
+    padding: 9px 12px 10px;
+    font-family: "DejaVu Serif", Georgia, serif;
+    font-size: 14.5px;
+    line-height: 19px;
+    box-shadow: 0 0 0 1px #000 inset;
+    min-width: 170px;
+  }
+  .tipwrap { display: inline-block; }
+  .tip { display: block; }
+  .bar { height: 7px; background: #1fd11f; border: 1px solid #000; margin-top: 2px; }
+  .name { font-size: 16.5px; line-height: 22px; }
+  .paladin { color: #f48cba; }
+  .guild { color: #a8a8ff; }
+  .white { color: #ffffff; }
+  .hostile { color: #ff3a2a; }
+  .quest { color: #ffd100; }
+  .objective { color: #eeeeee; padding-left: 14px; }
+  .icon { display: inline-block; width: 12px; height: 12px; background: #ffd100; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
+  .foot { color: #7d838c; font-size: 11.5px; margin-top: 18px; }
+</style>
+</head>
+<body>
+<div id="card">
+  <div class="row">
+    <div class="panel">
+      <div class="caption">Blizzard default</div>
+      <div class="sub">Every row shows.</div>
+      <div class="tipwrap">
+        <div class="tip">
+          <div class="name paladin">Aldric Dawnmantle</div>
+          <div class="guild">Silver Lanterns - Initiate</div>
+          <div class="white">Level 22 Human</div>
+          <div class="paladin">Paladin</div>
+          <div class="white">Alliance</div>
+        </div>
+        <div class="bar"></div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="caption">Rows hidden</div>
+      <div class="sub">Guild, class and faction unticked.<br>The rows that stay move up.</div>
+      <div class="tipwrap">
+        <div class="tip">
+          <div class="name paladin">Aldric Dawnmantle</div>
+          <div class="white">Level 22 Human</div>
+        </div>
+        <div class="bar"></div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="caption">Collapsed, with Questie</div>
+      <div class="sub">Collapsed to 1 row. Quest progress<br>stays visible.</div>
+      <div class="tipwrap">
+        <div class="tip">
+          <div class="name hostile">Kobold Vermin</div>
+          <div class="quest"><span class="icon"></span>[5] Kobold Camp Cleanup</div>
+          <div class="objective">Kobold Vermin slain: 3/10</div>
+        </div>
+        <div class="bar"></div>
+      </div>
+    </div>
+  </div>
+  <div class="foot">Illustration of FlexTip's row options, not an in-game screenshot. Names are made up.</div>
+</div>
+</body>
+</html>
