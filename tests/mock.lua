@@ -410,7 +410,13 @@ function TipClass:SetUnit(unit)
     if d.guild then lines[#lines + 1] = { type = T.None, leftText = d.guild .. " - " .. d.rank, r = 0.5, g = 0.5, b = 1 } end
     if d.title then lines[#lines + 1] = { type = T.None, leftText = "<" .. d.title .. ">" } end
     local kind = d.race or d.creatureType
-    lines[#lines + 1] = { type = T.None, leftText = d.levelLine or ("Level " .. (d.level or "??") .. (kind and (" " .. kind) or "")) }
+    if d.typeOwnRow then
+        -- Forever's NPC layout: "Level 6", then the creature type on its own row.
+        lines[#lines + 1] = { type = T.None, leftText = "Level " .. (d.level or "??") }
+        lines[#lines + 1] = { type = T.None, leftText = d.creatureType }
+    else
+        lines[#lines + 1] = { type = T.None, leftText = d.levelLine or ("Level " .. (d.level or "??") .. (kind and (" " .. kind) or "")) }
+    end
     if d.player and d.classLocal and not d.noClassLine then lines[#lines + 1] = { type = T.None, leftText = "|cfff48cba" .. d.classLocal .. "|r" } end
     if d.faction then lines[#lines + 1] = { type = T.None, leftText = d.faction } end
     if d.pvp then lines[#lines + 1] = { type = T.None, leftText = "PvP" } end

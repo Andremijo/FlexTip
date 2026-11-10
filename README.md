@@ -77,6 +77,7 @@ Put that number in the `## Interface:` line of `FlexTip.toc`. You can also tick 
 /ftip collapse   toggle collapsed unit tooltips
 /ftip scale 1.2  set the scale
 /ftip preview    show a sample tooltip at the anchor
+/ftip rows       list the rows of the last player or NPC tooltip and how FlexTip read them
 /ftip resetall   reset every setting
 /ftip debug      print errors that FlexTip would otherwise hide
 ```
@@ -94,6 +95,9 @@ FlexTip works alongside [Questie](https://github.com/Questie/Questie):
 Without Questie, the game's own quest rows count as quest objectives and progress.
 
 ## Notes
+
+- **Checkboxes only remove things.** With everything ticked, tooltips look like the game's own. The game decides what a tooltip contains: a bear has no guild or faction to hide, and Questie only adds rows to NPCs that matter for one of your quests.
+- **Something not hidden as expected?** Hover the player or NPC, then type `/ftip rows`. It lists every row of that tooltip: how FlexTip read it, whether Questie added it, and where the tooltip was placed.
 
 - **Combat restrictions.** WoW Forever uses Midnight's addon rules, so some values are "secret" during restricted combat. When that happens, FlexTip skips the extras it can't read, such as the target line or class colors, and the tooltip itself keeps working. `/ftip debug` shows what was skipped.
 - **Edit Mode.** When an anchor setting is "Blizzard default", the tooltip uses the position you set in Edit Mode (HUD Tooltip).

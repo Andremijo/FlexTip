@@ -3,7 +3,7 @@ local ADDON_NAME, FT = ...
 _G.FlexTip = FT
 
 local GetMetadata = C_AddOns and C_AddOns.GetAddOnMetadata or GetAddOnMetadata
-FT.version = (GetMetadata and GetMetadata(ADDON_NAME, "Version")) or "1.3.0"
+FT.version = (GetMetadata and GetMetadata(ADDON_NAME, "Version")) or "1.3.1"
 
 ---------------------------------------------------------------------------
 -- Choices and ranges (shared by validation and the options window)
@@ -258,6 +258,7 @@ local HELP = {
     "|cffffd100/ftip collapse|r - toggle collapsed unit tooltips",
     "|cffffd100/ftip scale 1.2|r - set the tooltip scale (0.5 to 2)",
     "|cffffd100/ftip preview|r - show a sample tooltip at the anchor",
+    "|cffffd100/ftip rows|r - list the rows of the last player or NPC tooltip and how FlexTip read them",
     "|cffffd100/ftip resetall|r - reset every setting",
 }
 
@@ -285,6 +286,8 @@ SlashCmdList.FLEXTIP = function(msg)
         end
     elseif cmd == "preview" then
         FT:ShowPreview()
+    elseif cmd == "rows" then
+        FT:PrintLastRows()
     elseif cmd == "resetall" then
         FT:ResetAll()
     elseif cmd == "debug" then

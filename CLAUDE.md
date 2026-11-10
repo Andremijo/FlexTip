@@ -13,6 +13,10 @@ The current version is in `FlexTip.toc` (`## Version`). The user-facing docs are
 
 - All code has been checked only against the mock in `tests/`. Nobody can run the game here.
 - The owner tested 1.1.0 in game and said it "works, with some minor bugs" but never described them. Ask about them.
+- In game with 1.3.0 (owner's screenshot): the options window and all its widgets render, and the scale setting works. Two bugs were found and fixed in 1.3.1:
+  - Forever puts an NPC's creature type on its own row.
+  - The options window was see-through.
+- When something looks wrong in game, ask the owner to hover the unit and send the output of `/ftip rows`.
 - Not verified in game yet:
   - Hidden rows might flash for one frame when a tooltip first appears. Row packing runs in OnUpdate.
   - `FitToRows` trims the height after rows are blanked.
@@ -25,6 +29,9 @@ The current version is in `FlexTip.toc` (`## Version`). The user-facing docs are
 - **Interface number: 16001.** Confirmed from Questie's `Questie_Forever.toc`. The TOC also lists the retail number (`## Interface: 16001, 120105`). In game, check with `/dump select(4, GetBuildInfo())`.
 - Forever also loads flavor TOCs named `_Forever.toc` and `_Camelot.toc`. Camelot is Forever's internal name, according to Questie. FlexTip uses a single TOC with a comma-separated Interface line.
 - AddOns folder: `World of Warcraft\_forever_\Interface\AddOns\FlexTip`. The folder must be named `FlexTip`.
+- Tooltip layouts seen in Forever:
+  - Player: name / `Guild - Rank` / `Level 22 Human` / class (own row) / faction.
+  - NPC: name / `Level 6` / `Beast` (creature type on its own row).
 
 ### Rules the code follows (Midnight restrictions)
 
@@ -43,7 +50,7 @@ The current version is in `FlexTip.toc` (`## Version`). The user-facing docs are
 | File | Contents |
 |---|---|
 | `FlexTip.toc` | Interface, version, SavedVariables (`FlexTipDB`), load order, `AddonCompartmentFunc` |
-| `Core.lua` | Defaults, choices, ranges, `InitDB` (merges and sanitizes saved data), `FT:Set`, `FT:SetRow`, `ApplyAll`, slash commands, key binding globals, events |
+| `Core.lua` | Defaults, choices, ranges, `InitDB` (merges and sanitizes saved data), `FT:Set`, `FT:SetRow`, `ApplyAll`, slash commands (including `/ftip rows`, the diagnostic report), key binding globals, events |
 | `Tooltip.lua` | Everything that touches `GameTooltip`: anchoring, scale, appearance, health bar, unit decorations, rows, collapse, quest rows, Questie detection, hooks, preview |
 | `Mover.lua` | The draggable anchor box and its scale grip |
 | `Options.lua` | The options window (`/ftip`), 3 columns (the third is "What tooltips show"), and a small entry under Options > AddOns |
@@ -88,6 +95,7 @@ The row kinds come from `Classify`:
 - `quest` is any other Questie row (objective titles and progress), or one of the game's quest rows.
 - `guild` is matched with `GetGuildInfo`.
 - `level` is matched with the prefix from `TOOLTIP_UNIT_LEVEL`.
+- `race` is a row that is exactly the race or creature type (Forever's NPC layout). It's controlled by the `race` switch, like the race part of the level row.
 - `class` is the localized class name on its own row.
 - `faction` is matched with `UnitFactionGroup` and `FACTION_*`.
 - `pvp` is matched with `PVP`.

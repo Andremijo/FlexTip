@@ -28,6 +28,7 @@ local written = {}  -- [line] = which snapshot entry that line shows now (0 = bl
 local visible = {}  -- scratch list of the snapshot entries to show, in order
 local questieLines = {} -- [line] = true for lines that Questie added
 local writtenStamp = {} -- [line] = render stamp of the text written there (0 = original)
+local lastReport = { lines = 0 } -- what /ftip rows prints about the last unit tooltip
 local renderStamp = 0
 FT.state = state
 
@@ -292,8 +293,8 @@ local function GatherUnitInfo(unit)
     return info
 end
 
--- Row kinds: name, target, questgiver, quest, guild, level, class, faction,
--- pvp, title, other. "unknown" rows (secret text, or no unit to compare with)
+-- Row kinds: name, target, questgiver, quest, guild, level, race, class,
+-- faction, pvp, title, other. "unknown" rows (secret text, or no unit to compare with)
 -- always show.
 local function Classify(i, text)
     if i == 1 then return "name" end
@@ -320,6 +321,8 @@ local function Classify(i, text)
     end
     if info.guild and text:find(info.guild, 1, true) then return "guild" end
     if IsLevelRow(text) then return "level" end
+    -- Forever puts an NPC's creature type ("Beast") on a row of its own.
+    if info.race and text == info.race then return "race" end
     if info.class and (text == info.class or text:sub(-#info.class - 1) == " " .. info.class) then
         return "class"
     end
@@ -437,6 +440,7 @@ local function CaptureLine(i)
     end
     local ok, kind = pcall(Classify, i, entry.left)
     entry.kind = ok and kind or "unknown"
+    entry.questie = questieLines[i] and true or false
     entry.display, entry.hidden, entry.stamp = nil, false, 0
     written[i], writtenStamp[i] = i, 0
 end
@@ -511,12 +515,23 @@ function FT:UpdateRows(tip)
         for i = 1, n do CaptureLine(i) end
         state.numLines = n
         state.renderKey = nil
+        lastReport.lines = n
+        if state.onMover then
+            lastReport.anchor = "the FlexTip anchor"
+        elseif state.follow then
+            lastReport.anchor = "the mouse cursor"
+        elseif state.category then
+            lastReport.anchor = "Blizzard's default spot (your setting for this kind of tooltip)"
+        else
+            lastReport.anchor = "a spot chosen by the game or another addon, so FlexTip didn't move it"
+        end
     elseif n > state.numLines then
         for i = state.numLines + 1, n do
             CaptureLine(i)
             Render(snapshot[i], full)
         end
         state.numLines = n
+        lastReport.lines = n
     elseif n < state.numLines then
         state.numLines = n
     end
@@ -554,6 +569,53 @@ function FT:UpdateRows(tip)
     if changed then Relayout(tip) end
     state.packed = count < n and count or 0
     if state.packed > 0 then FitToRows(tip, count) end
+end
+
+---------------------------------------------------------------------------
+-- /ftip rows: how FlexTip read the last player or NPC tooltip
+---------------------------------------------------------------------------
+local KIND_LABELS = {
+    name = "name", target = "FlexTip's Target: row", questgiver = "quest to pick up or turn in",
+    quest = "quest objective", guild = "guild", level = "level row", race = "race / type",
+    class = "class", faction = "faction", pvp = "PvP", title = "NPC title",
+    other = "other addon or unrecognized", unknown = "text the game keeps from addons",
+}
+
+function FT:PrintLastRows()
+    if lastReport.lines == 0 then
+        self:Print("no player or NPC tooltip seen yet. Hover over one, then type /ftip rows again.")
+        return
+    end
+    self:Print("the last player or NPC tooltip, as FlexTip read it:")
+    local fromQuestie = 0
+    for i = 1, lastReport.lines do
+        local entry = snapshot[i]
+        if entry then
+            local text
+            if issecretvalue(entry.left) then
+                text = "(hidden from addons)"
+            elseif entry.left == nil then
+                text = "(empty)"
+            else
+                text = entry.left:gsub("|T.-|t", "[icon]")
+            end
+            local status = "shown"
+            if entry.hidden then
+                status = "hidden"
+            elseif entry.display ~= nil then
+                status = "shown as \"" .. entry.display .. "|r\""
+            end
+            if entry.questie then fromQuestie = fromQuestie + 1 end
+            print(string.format("  %d. %s|r  [%s, %s%s]", i, text, KIND_LABELS[entry.kind] or entry.kind,
+                status, entry.questie and ", from Questie" or ""))
+        end
+    end
+    print("  Placed at " .. (lastReport.anchor or "an unknown spot") .. ".")
+    if self.questie then
+        print(string.format("  Questie is loaded; %d of these rows came from it.", fromQuestie))
+    else
+        print("  Questie isn't loaded.")
+    end
 end
 
 ---------------------------------------------------------------------------

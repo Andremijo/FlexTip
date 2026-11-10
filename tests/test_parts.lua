@@ -125,11 +125,44 @@ check(rows() == "Riverpaw Gnoll / [6] Gnoll Bounty / [5] Riverpaw Gnolls / River
 FT:Set("collapsed", false); M.Frame(1)
 tip:Hide()
 
+-- Forever's layout: the creature type on its own row (seen in game on a Young Black Bear)
+M.units.bear = { name = "Young Black Bear", level = 6, creatureType = "Beast", typeOwnRow = true }
+hover("bear")
+check(rows() == "Young Black Bear / Level 6 / Beast", "bear default: " .. rows())
+set("race", false)
+check(rows() == "Young Black Bear / Level 6", "creature type row hidden by Race / type: " .. rows())
+set("race", true); set("other", false)
+check(rows() == "Young Black Bear / Level 6 / Beast", "creature type row isn't an 'other' row: " .. rows())
+set("other", true)
+
+-- /ftip rows describes the last tooltip
+local printedBefore = #M.printed
+SlashCmdList.FLEXTIP("rows")
+local report = table.concat(M.printed, "\n", printedBefore + 1)
+check(report:find("Beast|r  [race / type, shown]", 1, true) ~= nil, "report names the creature type row:\n" .. report)
+check(report:find("Placed at the FlexTip anchor.", 1, true) ~= nil, "report says where the tooltip went")
+check(report:find("Questie is loaded; 0 of these rows came from it.", 1, true) ~= nil, "report mentions Questie")
+tip:Hide()
+
+hover("gnoll")
+set("questGivers", false)
+printedBefore = #M.printed
+SlashCmdList.FLEXTIP("rows")
+report = table.concat(M.printed, "\n", printedBefore + 1)
+check(report:find("[quest to pick up or turn in, hidden, from Questie]", 1, true) ~= nil, "report: hidden Questie giver row:\n" .. report)
+check(report:find("Questie is loaded; 3 of these rows came from it.", 1, true) ~= nil, "report counts Questie rows")
+set("questGivers", true)
+tip:Hide()
+
 -- A secret guild row can't be shortened, so it shows as it came
 M.secret["Misär - Initiate"] = true
 set("guildRank", false)
 hover("mouseover")
 check(rows():find("Misär - Initiate", 1, true) ~= nil, "secret row left alone: " .. rows())
+printedBefore = #M.printed
+SlashCmdList.FLEXTIP("rows")
+report = table.concat(M.printed, "\n", printedBefore + 1)
+check(report:find("(hidden from addons)|r  [text the game keeps from addons, shown]", 1, true) ~= nil, "report: secret row:\n" .. report)
 tip:Hide()
 
 -- The README illustration (docs/rows.png) shows exactly what these settings do

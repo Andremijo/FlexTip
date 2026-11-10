@@ -268,6 +268,12 @@ function FT:CreateOptions()
         tile = true, tileSize = 32, edgeSize = 32,
         insets = { left = 11, right = 12, top = 12, bottom = 11 },
     })
+    -- The dialog background is see-through; a dark layer under it keeps frames
+    -- behind the window from showing through.
+    local shade = f:CreateTexture(nil, "BACKGROUND", nil, -8)
+    shade:SetColorTexture(0.03, 0.03, 0.05, 0.95)
+    shade:SetPoint("TOPLEFT", 11, -12)
+    shade:SetPoint("BOTTOMRIGHT", -12, 11)
     f:Hide()
     tinsert(UISpecialFrames, "FlexTipOptionsFrame") -- close with Escape
 
